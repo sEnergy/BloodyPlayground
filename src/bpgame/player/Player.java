@@ -7,15 +7,18 @@ import java.awt.event.KeyListener;
 import java.util.ArrayList;
 import java.util.Random;
 
+import bpgame.BloodyPlayground;
 import bpgame.RenderLayer;
 import bpgame.eventhandling.CollisionHandling;
-import bpgame.weapons.Projectile;
-import bpgame.weapons.Weapon;
+import bpgame.weapons.*;
 import bpgame.weapons.Weapon.WEAPON;
+import bpgame.weapons.projectiles.Projectile;
+import bpgame.weapons.projectiles.ProjectileSeedManager;
 
-public class Player implements KeyListener {
+public class Player implements KeyListener, Comparable<Object> {
 	
 	private static int playerNumber = 0;
+	
 	private static CollisionHandling ch = null;
 	
 	public static enum DIRECTION {
@@ -28,8 +31,11 @@ public class Player implements KeyListener {
 	private int size = 50;
 	
 	private Color color;
+	private String name;
 	
 	private int max_speed = 5;
+	private double speedMultiplier = 1.0;
+	private double bonusSpeedMultiplier = 1.5;
 	private int current_speed = 0;
 	
 	private DIRECTION direction;
@@ -38,8 +44,7 @@ public class Player implements KeyListener {
 	private int spawnDelayMs = 1500;
 	private long nextSpawnTime;
 	
-	private int deaths;
-	private int kills;
+	private int deaths, kills;
 	
 	private int goUp;
 	private int goDown;
@@ -48,9 +53,23 @@ public class Player implements KeyListener {
 	private int fire;
 	
 	private long lastShot;
+	
+	private boolean puSpeedOn = false;
+	private boolean puAmmoOn = false;
+	private boolean puVestOn = false;
+	private boolean puMarksmanOn = false;
+	private boolean puRessurOn = false;
+	private boolean puPenetrateOn = false;
+	
+	private long puSpeedUntil;
+	private long puAmmoUntil;
+	private long puNoVestUntil;
+	private long puMarksmanUntil;
+	private long puRessurUntil;
+	private long puPenetrateUntil;
 
 	private RenderLayer map;
-	private Weapon w;
+	private Weapon w, pistolBackup = null;
 	private static ArrayList<Projectile> projectiles = null;
 	
 	public Player (RenderLayer map, ArrayList<Projectile> projectiles, CollisionHandling ch) {
@@ -59,39 +78,39 @@ public class Player implements KeyListener {
 		this.lastShot = System.currentTimeMillis();
 		
 		this.map = map;
-		Player.ch = (Player.ch==null)? ch:Player.ch;
+		Player.ch = ch;
 		
-		if (Player.projectiles == null) 
-		{
-			Player.projectiles = new ArrayList<Projectile>();
-			Player.projectiles = projectiles;
-		}
+		Player.projectiles = new ArrayList<Projectile>();
+		Player.projectiles = projectiles;
 		
 		switch(this.id)
 		{
 			case 1:
 				this.color = Color.GREEN;
-				goUp = KeyEvent.VK_NUMPAD8;
-				goDown = KeyEvent.VK_NUMPAD5;
-				goLeft = KeyEvent.VK_NUMPAD4;
-				goRight = KeyEvent.VK_NUMPAD6;
-				fire = KeyEvent.VK_NUMPAD1;
+				this.name = "Green";
+				this.goUp = KeyEvent.VK_NUMPAD8;
+				this.goDown = KeyEvent.VK_NUMPAD5;
+				this.goLeft = KeyEvent.VK_NUMPAD4;
+				this.goRight = KeyEvent.VK_NUMPAD6;
+				this.fire = KeyEvent.VK_NUMPAD1;
 				break;
 			case 2:
 				this.color = Color.YELLOW;
-				goUp = KeyEvent.VK_E;
-				goDown = KeyEvent.VK_D;
-				goLeft = KeyEvent.VK_S;
-				goRight = KeyEvent.VK_F;
-				fire = KeyEvent.VK_A;
+				this.name = "Yellow";
+				this.goUp = KeyEvent.VK_E;
+				this.goDown = KeyEvent.VK_D;
+				this.goLeft = KeyEvent.VK_S;
+				this.goRight = KeyEvent.VK_F;
+				this.fire = KeyEvent.VK_A;
 				break;
 			case 3:
 				this.color = Color.RED;
-				goUp = KeyEvent.VK_I;
-				goDown = KeyEvent.VK_K;
-				goLeft = KeyEvent.VK_J;
-				goRight = KeyEvent.VK_L;
-				fire = KeyEvent.VK_N;
+				this.name = "Red";
+				this.goUp = KeyEvent.VK_I;
+				this.goDown = KeyEvent.VK_K;
+				this.goLeft = KeyEvent.VK_J;
+				this.goRight = KeyEvent.VK_L;
+				this.fire = KeyEvent.VK_N;
 				break;
 		}
 		
@@ -121,7 +140,7 @@ public class Player implements KeyListener {
 		do {
 			this.x_pos = r.nextInt(map.getWidth());
 			this.y_pos = r.nextInt(map.getHeight());
-		} while (!ch.isEntrablePosition(this.x_pos, this.y_pos, this.id));
+		} while (!ch.isValidSpawnPosition(this.x_pos, this.y_pos, this.id));
 		
 		System.out.println("Player "+this.id+" spawned.");
 		this.alive = true;
@@ -132,26 +151,38 @@ public class Player implements KeyListener {
 		this.x_pos = this.y_pos = -100;
 		this.alive = false;
 		this.deaths++;
-		this.nextSpawnTime = System.currentTimeMillis() + spawnDelayMs;
+		this.nextSpawnTime = System.currentTimeMillis() + (puRessurOn? 0:spawnDelayMs);
+		
+		if (ProjectileSeedManager.countSeedsOfPlayer(this.id) != 0)
+			BloodyPlayground.s.stopSound("weapon_smg");
+		
+		ProjectileSeedManager.deleteSeedsOfPlayer(this.id);
 	}
 	
 	public void fire () {
 		
-		if (System.currentTimeMillis() - this.lastShot > w.getFireDelayMs())
-		{
-			Projectile tmp = w.fire(ch);
-			
-			if (tmp !=null)
+		if (System.currentTimeMillis() - this.lastShot > w.getFireDelayMs() / (puMarksmanOn? 1.5:1))
+		{			
+			if (w.fire(ch, this.isPuAmmoOn(), this.isPuPenetrateOn(), this.isPuMarksmanOn()))
 			{
-				Player.projectiles.add(tmp);
 				this.lastShot = System.currentTimeMillis();
 				System.out.println("Player "+id+" fired.");
 				
-				if (w.getWeaponType() == WEAPON.PISTOL && w.getClipState() == 0)
-					System.out.println("Player "+this.id+" started reloading.");
+				if (w.getClipState() == 0)
+				{
+					if (w.getWeaponType() == WEAPON.PISTOL)
+						System.out.println("Player "+this.id+" started reloading.");
+					else
+					{
+						this.pullPistol();
+						System.out.println("Player "+this.id+" has only pistol again.");
+					}
+				}
+				
 			}
 			else
 			{
+				BloodyPlayground.s.playSound("dry_fire");
 				System.out.println("Player "+this.id+" could not fire(empty clip).");
 			}
 		}
@@ -167,20 +198,20 @@ public class Player implements KeyListener {
 			switch (this.direction)
 			{
 				case DOWN:
-					y += current_speed;
+					y += current_speed*speedMultiplier;
 					break;
 				case LEFT:
-					x -= current_speed;
+					x -= current_speed*speedMultiplier;
 					break;
 				case RIGHT:
-					x += current_speed;
+					x += current_speed*speedMultiplier;
 					break;
 				case UP:
-					y -= current_speed;
+					y -= current_speed*speedMultiplier;
 					break;
 			}
 			
-			if (!ch.isEntrablePosition(x, y, this.id)) // conflict
+			if (!ch.isUnblockedPosition(x, y, this.id)) // conflict
 			{
 				return;
 			}
@@ -199,12 +230,60 @@ public class Player implements KeyListener {
 				this.spawn();
 		}
 		
+		if (this.puAmmoOn && this.puAmmoUntil < System.currentTimeMillis())
+		{
+			this.puAmmoOn = false;
+			System.out.println("Bonus Infinite ammo of Player "+id+" expired.");
+		}
+		
+		if (this.puVestOn && this.puNoVestUntil < System.currentTimeMillis())
+		{
+			this.puVestOn = false;
+			System.out.println("Bonus vest of Player "+id+" expired.");
+		}	
+		
+		if (this.puPenetrateOn && this.puPenetrateUntil < System.currentTimeMillis())
+		{
+			this.puPenetrateOn = false;
+			System.out.println("Bonus Penetrating ammo of Player "+id+" expired.");
+		}
+		
+		if (this.puRessurOn && this.puRessurUntil < System.currentTimeMillis())
+		{
+			this.puRessurOn = false;
+			System.out.println("Bonus Instant respawn of Player "+id+" expired.");
+		}
+		
+		if (this.puMarksmanOn && this.puMarksmanUntil < System.currentTimeMillis())
+		{
+			this.puMarksmanOn = false;
+			System.out.println("Bonus Marksman skills of Player "+id+" expired.");
+		}
+		
+		if (this.puSpeedOn && this.puSpeedUntil < System.currentTimeMillis())
+		{
+			this.puSpeedOn = false;
+			this.speedMultiplier = 1.0;
+			System.out.println("Bonus Sprint of Player "+id+" expired.");
+		}
 	}
 
 	public void render (Graphics g) {
 		
+		if (this.puVestOn)
+		{
+			g.setColor(Color.BLUE);
+			g.fillOval(this.x_pos-this.size/2-4, this.y_pos-this.size/2-4, this.size+8, this.size+8);
+		}
+		
 		g.setColor(color);
 		g.fillOval(this.x_pos-this.size/2, this.y_pos-this.size/2, this.size, this.size);
+		
+		if (this.puRessurOn)
+		{
+			g.setColor(Color.BLUE);
+			g.fillOval(this.x_pos-this.size/2+15, this.y_pos-this.size/2+15, this.size-30, this.size-30);
+		}
 		
 		int x,y;
 		
@@ -232,16 +311,19 @@ public class Player implements KeyListener {
 				break;
 		}
 		
-		g.setColor(Color.BLACK);
+		g.setColor(this.isPuPenetrateOn()? Color.ORANGE:Color.BLACK);
 		g.drawLine(this.x_pos, this.y_pos, x, y);
 	}
 
 	@Override
 	public void keyPressed(KeyEvent e) {
 		
+		DIRECTION original = this.direction;
+		
 		if (e.getKeyCode() == fire )
 		{
-			this.fire();
+			if (this.alive)
+				this.fire();
 		}
 		
 		if (e.getKeyCode() == goUp )
@@ -263,6 +345,14 @@ public class Player implements KeyListener {
 		else
 		{
 			return;
+		}
+		
+		if (original != this.direction)
+		{
+			if (ProjectileSeedManager.countSeedsOfPlayer(this.id) != 0)
+				BloodyPlayground.s.stopSound("weapon_smg");
+			
+			ProjectileSeedManager.deleteSeedsOfPlayer(this.id);
 		}
 		
 		current_speed = max_speed;
@@ -300,6 +390,11 @@ public class Player implements KeyListener {
 		return Player.projectiles;
 	}
 	
+	
+	public static CollisionHandling getCh() {
+		return ch;
+	}
+
 	public void addKill() {
 		kills++;
 	}
@@ -314,6 +409,10 @@ public class Player implements KeyListener {
 	
 	public int getId() {
 		return id;
+	}
+	
+	public String getName () {
+		return this.name;
 	}
 	
 	public DIRECTION getDirection() {
@@ -331,5 +430,88 @@ public class Player implements KeyListener {
 	public Weapon getWeapon() {
 		return w;
 	}
+	
+	public void setWeapon(Weapon w) {
+		this.pistolBackup = (this.w.getWeaponType()==WEAPON.PISTOL)? this.w:new Weapon(WEAPON.PISTOL, this);
+		this.w = w;
+	}
+	
+	public void pullPistol () {
+		this.w = this.pistolBackup;
+	}
 
+	public void setPuSpeedOn(int duration) {
+		this.puSpeedOn = true;
+		this.puSpeedUntil = System.currentTimeMillis() + duration;
+		this.speedMultiplier = this.bonusSpeedMultiplier;
+	}
+
+	public void setPuAmmoOn(int duration) {
+		this.puAmmoOn = true;
+		this.puAmmoUntil = System.currentTimeMillis() + duration;
+	}
+	
+	public void setPuVestOn(int duration) {
+		this.puVestOn = true;
+		this.puNoVestUntil = System.currentTimeMillis() + duration;
+	}
+	
+	public void setPuMarksmanOn(int duration) {
+		this.puMarksmanOn = true;
+		this.puMarksmanUntil = System.currentTimeMillis() + duration;
+	}
+	
+	public void setPuRessurOn(int duration) {
+		this.puRessurOn = true;
+		this.puRessurUntil = System.currentTimeMillis() + duration;
+	}
+
+	public void setPuPenetrateOn(int duration) {
+		this.puPenetrateOn = true;
+		this.puPenetrateUntil = System.currentTimeMillis() + duration;
+	}
+	
+	public boolean isPuSpeedOn() {
+		return puSpeedOn;
+	}
+
+	public boolean isPuAmmoOn() {
+		return puAmmoOn;
+	}
+	
+	public boolean isPuVestOn() {
+		return puVestOn;
+	}
+
+	public boolean isPuMarksmanOn() {
+		return puMarksmanOn;
+	}
+
+	public boolean isPuRessurOn() {
+		return puRessurOn;
+	}
+
+	public boolean isPuPenetrateOn() {
+		return puPenetrateOn;
+	}
+	
+	public static void resetId () {
+		Player.playerNumber = 0;
+	}
+	
+	@Override
+	public int compareTo (Object o) {
+		
+		Player pl = (Player)o;
+	    final int BEFORE = -1;
+	    final int EQUAL = 0;
+	    final int AFTER = 1;
+	    
+	    if (this.kills > pl.getKills())
+	    	return BEFORE;
+	    else if (this.deaths > pl.getDeaths())
+	    	return AFTER;
+	    else
+	    	return EQUAL;
+	}
 }

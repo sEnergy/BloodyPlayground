@@ -3,52 +3,74 @@ package bpgame.screens;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.util.ArrayList;
 
 import bpgame.RenderLayer;
+import bpgame.collectibles.CollectiblesManager;
 import bpgame.eventhandling.CollisionHandling;
+import bpgame.gamedata.GameSettings;
 import bpgame.player.Player;
-import bpgame.weapons.Projectile;
+import bpgame.weapons.projectiles.Projectile;
+import bpgame.weapons.projectiles.ProjectileSeedManager;
 
-public class GameScreen extends AbstractScreen {
+public class GameScreen extends AbstractScreen implements KeyListener {
 	
 	private final int SAFEZONE_BOTTOM = 170;
+
+	CollisionHandling ch = null;
+	CollectiblesManager cm = null;
+	ProjectileSeedManager pcm = null;
 	
-	RenderLayer layer;
-	CollisionHandling ch;
-	
-	private final int width, height;
+	GameSettings settings;
 	
 	private ArrayList<Player> players = null;
 	private ArrayList<Projectile> projectiles = null;
 	
-	public GameScreen (RenderLayer layer, int players) {
+	private boolean gameOver = false;
+	
+	public GameScreen (RenderLayer layer, GameSettings settings) {
+		
+		super(layer);
 		
 		this.layer = layer;
-		this.width = this.layer.getWidth();
-		this.height = this.layer.getHeight();
+		this.settings = settings;
+		
+		this.ch = new CollisionHandling (this.width, this.height, SAFEZONE_BOTTOM);
 		
 		this.players = new ArrayList<Player>();
 		this.projectiles = new ArrayList<Projectile>();
+		this.cm = new CollectiblesManager (this.ch);
 		
-		this.ch = new CollisionHandling (width, height, this.players, this.projectiles, SAFEZONE_BOTTOM);
+		ch.setCollectibles(this.cm.getCollectibles());
+		ch.setPlayers(this.players);
+		ch.setProjectiles(this.projectiles);
 		
-		for (int i = 0; i < players; i++)
+		Player.resetId();
+		
+		for (int i = 0; i < settings.getPlayers(); i++)
 		{	
 			Player tmp =  new Player(layer, projectiles, ch);
 			layer.addKeyListener(tmp);
 			this.players.add(tmp);
 		}
+		
+		layer.addKeyListener(this);
+		
+		this.pcm = new ProjectileSeedManager();
 	}
 
 	@Override
 	public void render (Graphics g) {
 		
-		g.setColor(this.layer.getForeground());
+		g.setColor(new Color(247,247,247));
 		g.fillRect(0, 0, this.layer.getWidth(), this.layer.getHeight());
 		
 		for (Player pl : players) pl.render(g);
 		for (Projectile projectile : projectiles) projectile.render(g);	
+		
+		this.cm.render(g);
 		
 		/*
 		 * Render of GUI
@@ -69,9 +91,10 @@ public class GameScreen extends AbstractScreen {
 			Player pl = players.get(i); 
 			
 			g.setFont(header);
-			g.drawString("Player "+pl.getId(), (int)(i*200*1.5)+100, guiTop+50);
+			g.drawString(pl.getName()+" player", (int)(i*200*1.5)+100, guiTop+30);
 			
 			g.setFont(content);
+			g.drawString("Weapon:  "+pl.getWeapon().getName(), (int)(i*200*1.5)+100, guiTop+55);
 			g.drawString("Kills:  "+pl.getKills(), (int)(i*200*1.5)+100, guiTop+80);
 			g.drawString("Deaths: "+pl.getDeaths(), (int)(i*200*1.5)+100, guiTop+105);
 			
@@ -83,11 +106,14 @@ public class GameScreen extends AbstractScreen {
 			}
 			else
 			{
+				g.setColor((pl.isPuAmmoOn())? Color.RED:Color.BLACK);
 				g.setFont(ammo);
 				for (int j = 0; j < clipState; j++)
 				{
 					g.drawString("#", (int)(i*200*1.5)+100+j*22, guiTop+140);
 				}
+				
+				g.setColor(Color.BLACK);
 			}
 			
 		}
@@ -97,6 +123,9 @@ public class GameScreen extends AbstractScreen {
 	@Override
 	public void update() {
 		for (Player pl : players) pl.update();	
+		this.cm.update();
+		
+		ProjectileSeedManager.update();
 		
 		ArrayList<Integer> toDestroy = new ArrayList<Integer>();
 		
@@ -116,6 +145,48 @@ public class GameScreen extends AbstractScreen {
 		}
 		
 		ch.checkForKills();
+		ch.checkForPickUps();
+		this.checkForGameOver();
+		
+		ProjectileSeedManager.update();
+	}
+	
+	private void checkForGameOver () {
+		for (Player pl : players)
+		{
+			if (pl.getKills()  >= this.settings.getEndValue())		
+				this.gameOver = true;
+		}
 	}
 
+	public boolean isGameOver () {
+		return this.gameOver;
+	}
+	
+	public void GameOver () {
+		this.gameOver = true;
+	}
+	
+	public void removeListeners () {
+		for (Player pl : this.players)
+			this.layer.removeKeyListener(pl);
+		layer.removeKeyListener(this);
+	}
+
+	@Override
+	public void keyPressed(KeyEvent e) {
+		if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
+			this.layer.pause();
+	}
+
+	@Override
+	public void keyReleased(KeyEvent arg0) {}
+
+	@Override
+	public void keyTyped(KeyEvent arg0) {}
+	
+	public ArrayList<Player> getPlayerList () {
+		return this.players;
+	}
+	
 }
