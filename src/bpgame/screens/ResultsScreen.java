@@ -3,6 +3,9 @@ package bpgame.screens;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Image;
+
+import javax.swing.ImageIcon;
 
 import bpgame.RenderLayer;
 import bpgame.gamedata.GameResults;
@@ -51,6 +54,9 @@ public class ResultsScreen extends AbstractScreen {
 			start = width/2 - stringLen/2;  
 			g.drawString(s, start, 220+(i+1)*60);
 		}
+		
+		Image dir_down = new ImageIcon("lib/gui/dir_down.png").getImage();
+		g.drawImage(dir_down, 20, 20, layer);
 		
 	}
 

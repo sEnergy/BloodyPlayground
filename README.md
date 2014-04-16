@@ -6,6 +6,10 @@ My first real game.
 30.3-2014 -> 10 hours
 31.3.2014 -> 12 hrs
 2.4.2014 -> 4 hours
+13.4.2014 -> 6 hours
+15.4.2014 -> 6 hours
+16.4.2014 -> 1 hour
+
 
 
 TODO
