@@ -1,0 +1,12 @@
+In this directory, there are subdirectories containing textures for all used 
+resolutions.
+
+        -------------------------
+        |Directory | Resolution | 
+        |----------|------------|
+        |  r1280   |  1280x720  |
+        |  r1336   |  1336x768  |
+        |  r1600   |  1600x900  |
+        |  r1920   |  1980x1050 |
+        -------------------------
+
