@@ -1,37 +1,36 @@
 package bpgame;
 
-import java.awt.BorderLayout;
+import java.util.Random;
+
 import javax.swing.JFrame;
 
 import bpgame.soundengine.SoundManager;
 
+/*
+ * Game frame class also carrying main function.
+ */
 public class BloodyPlayground extends JFrame {
 	
-	public static SoundManager s = null;
-
 	private static final long serialVersionUID = 4704860925089425366L;
-	public static final String GAME_NAME = "Bloody Playground - alfa version";
+	private static final String GAME_NAME = "Bloody Playground - alfa version";
+	
+	public static SoundManager s = null;
+	public static Random r = new Random();
 
 	public static void main(String[] args) {
-		BloodyPlayground  core = new BloodyPlayground();
-		core.init();
+		BloodyPlayground game = new BloodyPlayground();
+		game.init();
 	}
 	
 	private void init () {
-		RenderLayer layer = new RenderLayer(1024, 768);
-		this.add(layer);
-		//this.setUndecorated(true);
-		this.pack();
-		
-		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		this.setLayout(new BorderLayout());
-		//this.setExtendedState(MAXIMIZED_BOTH); 
-		this.setVisible(true);
-		
-		this.repaint();
 		this.setTitle(GAME_NAME);
+		
+		RenderLayer layer = new RenderLayer(this);
+		
+		this.add(layer);
+		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		this.setResizable(false);
 		
 		layer.start();
 	}
-
 }

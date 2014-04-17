@@ -9,39 +9,45 @@ import java.util.ArrayList;
 
 import bpgame.RenderLayer;
 import bpgame.collectibles.CollectiblesManager;
-import bpgame.eventhandling.CollisionHandling;
+import bpgame.events.handling.CollisionHandling;
 import bpgame.gamedata.GameSettings;
 import bpgame.player.Player;
 import bpgame.weapons.projectiles.Projectile;
 import bpgame.weapons.projectiles.ProjectileSeedManager;
 
+/*
+ * Screen of gameplay
+ */
 public class GameScreen extends AbstractScreen implements KeyListener {
 	
 	private final int SAFEZONE_BOTTOM = 170;
 
 	CollisionHandling ch = null;
 	CollectiblesManager cm = null;
-	ProjectileSeedManager pcm = null;
+	ProjectileSeedManager psm = null;
 	
-	GameSettings settings;
+	GameSettings gameSettings;
 	
 	private ArrayList<Player> players = null;
 	private ArrayList<Projectile> projectiles = null;
 	
 	private boolean gameOver = false;
 	
-	public GameScreen (RenderLayer layer, GameSettings settings) {
+	public GameScreen (RenderLayer layer) {
 		
 		super(layer);
 		
 		this.layer = layer;
-		this.settings = settings;
+		this.gameSettings = layer.getGameSettings();
 		
-		this.ch = new CollisionHandling (this.width, this.height, SAFEZONE_BOTTOM);
+		this.ch = new CollisionHandling (layer.getProgramSettings().getCanvasX(), layer.getProgramSettings().getCanvasY(), SAFEZONE_BOTTOM);
 		
 		this.players = new ArrayList<Player>();
 		this.projectiles = new ArrayList<Projectile>();
 		this.cm = new CollectiblesManager (this.ch);
+		this.psm = new ProjectileSeedManager();
+		
+		this.layer.setSize(layer.getProgramSettings().getCanvasDimension());
 		
 		ch.setCollectibles(this.cm.getCollectibles());
 		ch.setPlayers(this.players);
@@ -49,7 +55,7 @@ public class GameScreen extends AbstractScreen implements KeyListener {
 		
 		Player.resetId();
 		
-		for (int i = 0; i < settings.getPlayers(); i++)
+		for (int i = 0; i < gameSettings.getPlayers(); i++)
 		{	
 			Player tmp =  new Player(layer, projectiles, ch);
 			layer.addKeyListener(tmp);
@@ -57,12 +63,12 @@ public class GameScreen extends AbstractScreen implements KeyListener {
 		}
 		
 		layer.addKeyListener(this);
-		
-		this.pcm = new ProjectileSeedManager();
 	}
 
 	@Override
 	public void render (Graphics g) {
+		
+		//this.computeRenderDimensions();
 		
 		g.setColor(new Color(247,247,247));
 		g.fillRect(0, 0, this.layer.getWidth(), this.layer.getHeight());
@@ -120,6 +126,9 @@ public class GameScreen extends AbstractScreen implements KeyListener {
 		
 	}
 
+	/*
+     * Calls update methods of all game objects + checks collisions
+	 */
 	@Override
 	public void update() {
 		for (Player pl : players) pl.update();	
@@ -147,15 +156,16 @@ public class GameScreen extends AbstractScreen implements KeyListener {
 		ch.checkForKills();
 		ch.checkForPickUps();
 		this.checkForGameOver();
-		
-		ProjectileSeedManager.update();
 	}
 	
+	/*
+	 * Method that checks for gameover
+	 */
 	private void checkForGameOver () {
 		for (Player pl : players)
 		{
-			if (pl.getKills()  >= this.settings.getEndValue())		
-				this.gameOver = true;
+			if (pl.getKills() >= this.gameSettings.getEndValue())		
+				this.GameOver();
 		}
 	}
 
@@ -167,12 +177,18 @@ public class GameScreen extends AbstractScreen implements KeyListener {
 		this.gameOver = true;
 	}
 	
+	/*
+	 * Removes all listeners from render layer
+	 */
 	public void removeListeners () {
 		for (Player pl : this.players)
 			this.layer.removeKeyListener(pl);
 		layer.removeKeyListener(this);
 	}
 
+	/*
+	 * Reaction to some key presses
+	 */
 	@Override
 	public void keyPressed(KeyEvent e) {
 		if (e.getKeyCode() == KeyEvent.VK_ESCAPE)

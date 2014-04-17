@@ -3,36 +3,73 @@ package bpgame;
 import java.awt.Canvas;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Toolkit;
 import java.awt.image.BufferStrategy;
 
 import bpgame.gamedata.GameResults;
 import bpgame.gamedata.GameSettings;
-import bpgame.screens.*;
+import bpgame.program.ProgramSettings;
+import bpgame.screens.AbstractScreen;
 import bpgame.screens.AbstractScreen.SCREEN;
+import bpgame.screens.GameScreen;
+import bpgame.screens.MainMenuScreen;
+import bpgame.screens.PauseScreen;
+import bpgame.screens.ResultsScreen;
+import bpgame.screens.SettingsScreen;
 import bpgame.soundengine.Sound;
 import bpgame.soundengine.SoundManager;
 
+/*
+ * Core of the game - this class runs all screen loops.
+ */
 public class RenderLayer extends Canvas implements Runnable {
 
-	private static final long serialVersionUID = 1L;
-	private static final int TICKS_PER_SECOND = 60;
+	private static final long serialVersionUID = 5145277739867449106L;
+	
+	private final int TICKS_PER_SECOND = 60; // number of times game is updated per second == game speed
+	private final double NS_PER_TICK = Math.pow(10,9)/TICKS_PER_SECOND; // target is 60 ticks per second
 	
 	private Thread t;
-	private boolean exit = false;
-	private boolean pause = false;
 	
+	/*
+	 * These variables are used when pausing game. 
+	 * 
+	 * pause            --- represents state of game
+	 * unprocessedTicks --- number of updates to perform
+	 */
+	private boolean pause = false;
 	private double unprocessedTicks;
 	
-	private SCREEN cScreen = SCREEN.MAIN_MENU;
+
+	// represents state of program (what screen is user currently using)
+	private SCREEN currentScreen = SCREEN.MAIN_MENU;
 	
 	private GameScreen gs;
 	private GameSettings settings;
+	private ProgramSettings ps;
 	
-	public RenderLayer (int w, int h) {
+	private BloodyPlayground frame;
+	
+	public RenderLayer (BloodyPlayground frame) {
 		super();
-		this.setSize(new Dimension(w, h));
-		this.t = new Thread(this);
+		
+		// setting default resolution of the game and size of frame
+		this.ps = new ProgramSettings(frame);
+		this.ps.setResolution("r1280");
+		
 		this.settings = new GameSettings();
+		this.frame = frame;
+		
+		// setting position on frame
+		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+		
+		int frameXpos = (int) screenSize.getWidth()/2-ps.getCanvasX()/2;
+		int frameYpos = (int) screenSize.getHeight()/2-ps.getCanvasY()/2;
+		
+		this.frame.setLocation(frameXpos,frameYpos);
+		this.frame.setVisible(true);
+		
+		this.t = new Thread(this);
 	}
 
 	@Override
@@ -58,98 +95,147 @@ public class RenderLayer extends Canvas implements Runnable {
 			}
 		};
 		
+		ps.setResolution("r1280");
+		this.setSize(ps.getCanvasDimension());
+		this.frame.setSize(ps.getFrameDimension());
+		
 		long lastCycleTime = System.nanoTime(); // time of beginning of last cycle
 		long lastOutputTime = System.currentTimeMillis(); // last info output time
-		
-		double nsPerTick = Math.pow(10,9)/TICKS_PER_SECOND; // target is 60 ticks per second
 		
 		int fps = 0;
 		int ticks = 0;
 		
-		while (!exit)
+		/*
+		 * This is infinite loop of program screens.
+		 * 
+		 * The very core of this program.
+		 */
+		while (true)
 		{
-			if (cScreen == SCREEN.GAME) // fake game choose
+			/*
+			 * Game screen
+			 */
+			if (currentScreen == SCREEN.GAME)
 			{
 				BloodyPlayground.s.playSound("music");
-				gs  = new GameScreen(this, this.settings);
+				
+				// initialization if gameplay screens
+				gs  = new GameScreen(this);
 				PauseScreen ps = new PauseScreen(this);
 				
+				// game itself
 				while (!gs.isGameOver()) 
 				{
+					// counting unprocessed ticks
 					long CurrentCycleTime = System.nanoTime();
-					unprocessedTicks += ( CurrentCycleTime - lastCycleTime ) / nsPerTick; 	
-					
+					unprocessedTicks += ( CurrentCycleTime - lastCycleTime ) / NS_PER_TICK; 	
+
 					lastCycleTime = CurrentCycleTime;
 					
 					if (!pause)
 					{
+						/*
+						 * Game not paused:
+						 * 		-> render current state of game screen
+						 *      -> update game screen
+						 */
 						this.render(gs);
 						fps++;
 						
 						while (unprocessedTicks >= 1) {
 							ticks++;
 							unprocessedTicks--;
-							this.update(gs);
+							gs.update();
 						}
 					}
 					else
 					{
+						/*
+						 * Game is paused:
+						 * 		-> render pause menu
+						 */
 						this.render(ps);					
 					}
 					
+					/*
+					 * This is just backend state watch.
+					 */
 					if (System.currentTimeMillis() - lastOutputTime > 1000)
 					{
 						System.out.println("Ticks: "+ticks+" FPS:"+fps);
-						
 						lastOutputTime += 1000;
 						ticks = fps = 0;
 					}
 				}
 				
-				BloodyPlayground.s.stopSound("music");
+				/*
+				 * End of game. Stop all sounds and remove gameplay screens listeners
+				 */
+				BloodyPlayground.s.stopAllSounds();
 				gs.removeListeners();
 				ps.removeListener();
 				
-				
+				/*
+				 * Generating game results based on endgame gameScreen state,
+				 * Initialization of game screnn.
+				 */
 				GameResults results = new GameResults (this.gs.getPlayerList());
 				ResultsScreen rs = new ResultsScreen (this, results);
+				
+				// results screen loop
 				while (true) 
 				{
+					/*
+					 * When there is something to update, uncomment foolowing:
+					 */
+					/*
 					long CurrentCycleTime = System.nanoTime();
-					unprocessedTicks += ( CurrentCycleTime - lastCycleTime ) / nsPerTick; 
+					unprocessedTicks += ( CurrentCycleTime - lastCycleTime ) / NS_PER_TICK;
+					lastCycleTime = CurrentCycleTime;
 					
 					this.render(rs);
 					fps++;	
 					
-					lastCycleTime = CurrentCycleTime;
-					
 					while (unprocessedTicks >= 1) {
 						ticks++;
 						unprocessedTicks--;
+						rs.update();
 					}
+					*/
 					
+					this.render(rs);
+					
+					/*
+					 * This is just backend state watch.
+					 */
 					if (System.currentTimeMillis() - lastOutputTime > 1000)
 					{
 						System.out.println("Ticks: "+ticks+" FPS:"+fps);
-						
 						lastOutputTime += 1000;
 						ticks = fps = 0;
 					}
 					
-					if (rs.expired())
+					if (rs.expired()) // development-stage end condition
 						break;
 				}
 				
-				cScreen = SCREEN.MAIN_MENU;
+				currentScreen = SCREEN.MAIN_MENU; // go to main menu
 			}
-			else if (cScreen == SCREEN.MAIN_MENU)
+			/*
+			 * Main menu screen
+			 */
+			else if (currentScreen == SCREEN.MAIN_MENU)
 			{
 				MainMenuScreen menu = new MainMenuScreen(this);
 				
 				while (true) 
 				{
+					/*
+					 * When there is something to update, uncomment foolowing:
+					 */
+					/*
 					long CurrentCycleTime = System.nanoTime();
-					unprocessedTicks += ( CurrentCycleTime - lastCycleTime ) / nsPerTick; 
+					unprocessedTicks += ( CurrentCycleTime - lastCycleTime ) / NS_PER_TICK; 
 					
 					this.render(menu);
 					fps++;	
@@ -159,9 +245,26 @@ public class RenderLayer extends Canvas implements Runnable {
 					while (unprocessedTicks >= 1) {
 						ticks++;
 						unprocessedTicks--;
-						this.update(menu);
+						menu.update();
+					}
+					*/
+					
+					this.render(menu);
+					
+					/*
+					 * User moved from Main menu screen
+					 * 		-> remove Main menu mouse listener
+					 *		-> break Main menu loop
+					 */
+					if (currentScreen != SCREEN.MAIN_MENU)
+					{
+						menu.removeListener();
+						break;
 					}
 					
+					/*
+					 * This is just backend state watch.
+					 */
 					if (System.currentTimeMillis() - lastOutputTime > 1000)
 					{
 						System.out.println("Ticks: "+ticks+" FPS:"+fps);
@@ -169,22 +272,23 @@ public class RenderLayer extends Canvas implements Runnable {
 						lastOutputTime += 1000;
 						ticks = fps = 0;
 					}
-					
-					if (cScreen != SCREEN.MAIN_MENU)
-					{
-						menu.removeListener();
-						break;
-					}
 				}
 			}
-			else if (cScreen == SCREEN.SETTINGS)
+			/*
+			 * Settings screen
+			 */
+			else if (currentScreen == SCREEN.SETTINGS)
 			{
 				SettingsScreen menu  = new SettingsScreen(this, this.settings);
 				
 				while (true) 
 				{
+					/*
+					 * When there is something to update, uncomment foolowing:
+					 */
+					/*
 					long CurrentCycleTime = System.nanoTime();
-					unprocessedTicks += ( CurrentCycleTime - lastCycleTime ) / nsPerTick; 
+					unprocessedTicks += ( CurrentCycleTime - lastCycleTime ) / NS_PER_TICK; 
 					
 					this.render(menu);
 					fps++;	
@@ -194,9 +298,26 @@ public class RenderLayer extends Canvas implements Runnable {
 					while (unprocessedTicks >= 1) {
 						ticks++;
 						unprocessedTicks--;
-						this.update(menu);
+						menu.update();
+					}
+					*/
+					
+					this.render(menu);
+					
+					/*
+					 * User moved from Settings screen
+					 * 		-> remove Settings screen mouse listener
+					 *		-> break Settings screen loop
+					 */
+					if (currentScreen != SCREEN.SETTINGS) 
+					{
+						menu.removeListener();
+						break;
 					}
 					
+					/*
+					 * This is just backend state watch.
+					 */
 					if (System.currentTimeMillis() - lastOutputTime > 1000)
 					{
 						System.out.println("Ticks: "+ticks+" FPS:"+fps);
@@ -204,19 +325,14 @@ public class RenderLayer extends Canvas implements Runnable {
 						lastOutputTime += 1000;
 						ticks = fps = 0;
 					}
-					
-					if (cScreen != SCREEN.SETTINGS) 
-					{
-						menu.removeListener();
-						break;
-					}
-				}
-			}
-		}	
-		
-		System.exit(0);
+				} // end of Settings screen loop
+			} // end of Settings screen
+		} // end of screens loop
 	}
 
+	/*
+	 * Prepares buffer strategy for rendering and calls render method of current screen
+	 */
 	private void render (AbstractScreen as) {
 		
 		BufferStrategy buffer = this.getBufferStrategy();
@@ -235,17 +351,26 @@ public class RenderLayer extends Canvas implements Runnable {
 			buffer.show();
 		}
 	}
-
-	private void update(AbstractScreen as) {
-		as.update();
-	}
-
+	
 	public void start () {
-		t.start();
+		this.t.start();
 	}
 	
-	public void setScreen (SCREEN s) {
-		this.cScreen = s;
+	public void setScreen (SCREEN screen) {
+		this.currentScreen = screen;
+	}
+	
+	/*
+	 * Pauses/unpauses the game.
+	 * 
+	 * When unpause, set number of unprocessed ticks to zero in order
+	 * to prevent running of pause-time woth of updates.
+	 */
+	public void pause () {
+		this.pause = !this.pause;
+		
+		if (!pause) 
+			this.unprocessedTicks = 0;
 	}
 	
 	public GameSettings getGameSettings() {
@@ -256,12 +381,15 @@ public class RenderLayer extends Canvas implements Runnable {
 		return this.pause;
 	}
 	
-	public void pause () {
-		this.pause = !this.pause;
-		if (!pause) unprocessedTicks = 0;
-	}
-	
 	public GameScreen getGameScreen () {
 		return this.gs;
+	}
+	
+	public ProgramSettings getProgramSettings () {
+		return this.ps;
+	}
+	
+	public BloodyPlayground getFrame () {
+		return this.frame;
 	}
 }

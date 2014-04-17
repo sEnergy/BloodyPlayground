@@ -2,38 +2,44 @@ package bpgame.collectibles;
 
 import java.awt.Color;
 import java.awt.Graphics;
-//import java.util.Random;
 
-import java.util.Random;
+import bpgame.BloodyPlayground;
+import bpgame.events.handling.CollisionHandling;
 
-import bpgame.eventhandling.CollisionHandling;
-
+/*
+ * Class of collectible Power Up - gameplay bonuses
+ */
 public class PowerUp extends AbstractCollectible{
 	
-	private POWERUP powerUpType;
-	private Color color;
-	
-	private final int MINIMAL_TIME = 5000;
-	private final int MAXIMAL_TIME = 15000;
-	private int bonusTimeMs;
+	private final int MINIMAL_EFFECT_TIME = 5000;
+	private final int MAXIMAL_EFFECT_TIME = 15000;
 
+	/*
+	 * Enum for types of Power Ups
+	 */
 	public enum POWERUP {
-		SPEED,
-		AMMO,
-		VEST,
-		MARKSMAN,
-		RESURRECTION,
-		PENETRATE
+		SPEED, // increased player movement
+		AMMO, // unlimited ammo
+		VEST, // protects player from standard not penetrating projectiles
+		MARKSMAN, // faster weapon handling
+		RESURRECTION, // instant respawn
+		PENETRATE // penetrating ammo
 	}
+	
+	private final int effectTimeMs; // time of Power Up effect
+	private final POWERUP powerUpType;
+	private final Color color;
 	
 	public PowerUp (CollisionHandling ch) {
 		
 		super(COLLECTIBLE.POWERUP, ch);
 		
-		Random r = new Random();
-		this.bonusTimeMs = MINIMAL_TIME + r.nextInt(MAXIMAL_TIME-MINIMAL_TIME);
+		this.effectTimeMs = MINIMAL_EFFECT_TIME + BloodyPlayground.r.nextInt(MAXIMAL_EFFECT_TIME-MINIMAL_EFFECT_TIME);
 		
-		switch(r.nextInt(6)+1)
+		/*
+		 * Randomly pick type of Powr Up and set attributes accordingly
+		 */
+		switch(BloodyPlayground.r.nextInt(6)+1)
 		{
 			case 1:
 				this.powerUpType = POWERUP.SPEED;
@@ -61,16 +67,17 @@ public class PowerUp extends AbstractCollectible{
 				this.color = Color.YELLOW;
 				break;
 			case 6:
+			default:
 				this.powerUpType = POWERUP.PENETRATE;
 				this.name = "Penetrating ammo";
 				this.color = Color.CYAN;
 				break;
 		}
-		
-		System.out.println("Bonus "+name+" spawned for "+(this.disposeTime-System.currentTimeMillis())+"ms.");
-		
 	}
 	
+	/*
+	 * Override of abstract method for render of collectible
+	 */
 	@Override
 	public void render(Graphics g) {
 		g.setColor(this.color);
@@ -78,9 +85,25 @@ public class PowerUp extends AbstractCollectible{
 		g.setColor(Color.BLACK);
 		g.drawString(name, this.x-this.size/2-10, this.y-this.size/2-10);
 	}
+
+	/*
+	 * Override of abstract method informing if collectible is powerup
+	 */
+	@Override
+	public boolean isPowerUp() {
+		return true;
+	}
+
+	/*
+	 * Override of abstract method informing if collectible is weapon
+	 */
+	@Override
+	public boolean isWeapon() {
+		return false;
+	}
 	
-	public int getBonusTime() {
-		return bonusTimeMs;
+	public int getEffectTime() {
+		return effectTimeMs;
 	}
 
 	public String getName() {
@@ -89,16 +112,6 @@ public class PowerUp extends AbstractCollectible{
 
 	public POWERUP getType() {
 		return powerUpType;
-	}
-
-	@Override
-	public boolean isPowerUp() {
-		return true;
-	}
-
-	@Override
-	public boolean isWeapon() {
-		return false;
 	}
 
 }

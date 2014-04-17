@@ -26,6 +26,8 @@ public class ResultsScreen extends AbstractScreen {
 	@Override
 	public void render(Graphics g) {
 		
+		this.getRenderDimensions();
+		
 		// background
 		g.setColor(Color.LIGHT_GRAY);
 		g.fillRect(0, 0, this.layer.getWidth(), this.layer.getHeight());

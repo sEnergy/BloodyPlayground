@@ -1,50 +1,77 @@
 package bpgame.collectibles;
 
 import java.awt.Graphics;
-import java.util.Random;
 
-import bpgame.eventhandling.CollisionHandling;
+import bpgame.BloodyPlayground;
+import bpgame.events.handling.CollisionHandling;
 
+/*
+ * Abstract class for collectibles - weapons and powerups
+ */
 public abstract class AbstractCollectible {
 	
-	private final int MIN_DURATION = 30000;
-	private final int MAX_DURATION = 100000;
+	private final int MIN_VISIBILITY_DURATION = 3000;
+	private final int MAX_VISIBILITY_DURATION = 10000;
 	
-	protected String name;
-	protected COLLECTIBLE type;
+	private final int MAX_VISIBILITY_DURATION_VARIABLE = MAX_VISIBILITY_DURATION-MIN_VISIBILITY_DURATION;
 	
-	protected int size = 10;
-	protected int x, y;
-
-	protected long disposeTime;
-	
+	/*
+	 * Enum for types of collectibles
+	 */
 	public enum COLLECTIBLE {
 		POWERUP,
 		WEAPON
 	}
 	
+	private long disposeTime; // time of end of visibility
+	
+	protected String name;
+	protected COLLECTIBLE type;
+	
+	protected int size = 10;
+	protected int x, y; // position
+	
 	public AbstractCollectible (COLLECTIBLE type, CollisionHandling ch) {
 		
-		Random r = new Random();
-		
+		// find valid spawn position
 		do {
-			this.x = r.nextInt(ch.getWidth());
-			this.y = r.nextInt(ch.getHeight());
+			this.x = BloodyPlayground.r.nextInt(ch.getWidth());
+			this.y = BloodyPlayground.r.nextInt(ch.getHeight());
 		} while (!ch.isValidSpawnPosition(this.x, this.y, 0));
 		
 		this.type = type;
-		this.disposeTime = System.currentTimeMillis() + MIN_DURATION + r.nextInt(MAX_DURATION-MIN_DURATION);
+		this.disposeTime = System.currentTimeMillis() + MIN_VISIBILITY_DURATION + BloodyPlayground.r.nextInt(MAX_VISIBILITY_DURATION_VARIABLE);
+		
+		System.out.println("Bonus "+name+" spawned for "+(this.disposeTime-System.currentTimeMillis())+"ms.");
 	}
 	
+	/*
+	 * Abstract method for rendering collectible
+	 */
 	public abstract void render (Graphics g);
+	
+	/*
+	 * Abstract method informing if collectible is powerup
+	 */
 	public abstract boolean isPowerUp ();
+	
+	/*
+	 * Abstract method informing if collectible is weapon
+	 */
 	public abstract boolean isWeapon ();
 	
-	public boolean expired () {
+	/*
+	 * Is collectible expired == should it loose visibility?
+	 */
+	public boolean isExpired () {
 		return (this.disposeTime < System.currentTimeMillis());
 	}
 	
-	public void pickup () {
+	/*
+	 * Set dispose time to current time, so Collectible manager will
+	 * dispose this object the next tick.
+	 */
+	public void dispose () {
 		this.disposeTime = System.currentTimeMillis();
 	}
 

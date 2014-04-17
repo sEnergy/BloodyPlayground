@@ -4,11 +4,17 @@ import java.awt.Graphics;
 
 import bpgame.RenderLayer;
 
+/*
+ * Abstract class of program screen
+ */
 public abstract class AbstractScreen {
 	
-	protected final int width, height;
+	protected int width, height;
 	protected RenderLayer layer;
 	
+	/*
+	 * Enum for unique program screens
+	 */
 	public enum SCREEN {
 		MAIN_MENU,
 		SETTINGS,
@@ -17,6 +23,9 @@ public abstract class AbstractScreen {
 	
 	public AbstractScreen (RenderLayer layer) {
 		this.layer = layer;
+	}
+	
+	public void getRenderDimensions () {
 		this.width = layer.getWidth();
 		this.height = layer.getHeight();
 	}

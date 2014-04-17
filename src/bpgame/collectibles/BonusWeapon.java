@@ -2,22 +2,27 @@ package bpgame.collectibles;
 
 import java.awt.Color;
 import java.awt.Graphics;
-import java.util.Random;
 
-import bpgame.eventhandling.CollisionHandling;
+import bpgame.BloodyPlayground;
+import bpgame.events.handling.CollisionHandling;
 import bpgame.weapons.Weapon;
 import bpgame.weapons.Weapon.WEAPON;
 
+/*
+ * Class of collectible weapon
+ */
 public class BonusWeapon extends AbstractCollectible {
 	
-	private Color color;
-	private Weapon w;
+	private final Color color;
+	private final Weapon w;
 
 	public BonusWeapon(CollisionHandling ch) {
 		super(COLLECTIBLE.WEAPON, ch);
 		
-		Random r = new Random();
-		switch (r.nextInt(2)+1)
+		/*
+		 * Randomly pick weapon and set attributes accordingly
+		 */
+		switch (BloodyPlayground.r.nextInt(2)+1)
 		{
 			case 1:
 				this.w = new Weapon(WEAPON.SHOTGUN, null);
@@ -25,6 +30,7 @@ public class BonusWeapon extends AbstractCollectible {
 				this.color = Color.MAGENTA;
 				break;
 			case 2:
+			default:
 				this.w = new Weapon(WEAPON.SMG, null);
 				this.name = "SMG";
 				this.color = Color.RED;
@@ -32,6 +38,9 @@ public class BonusWeapon extends AbstractCollectible {
 		}
 	}
 
+	/*
+	 * Override of abstract method for render of collectible
+	 */
 	@Override
 	public void render(Graphics g) {
 		g.setColor(this.color);
@@ -40,18 +49,24 @@ public class BonusWeapon extends AbstractCollectible {
 		g.drawString(name, this.x-this.size/2-10, this.y-this.size/2-10);
 	}
 
+	/*
+	 * Override of abstract method informing if collectible is powerup
+	 */
 	@Override
 	public boolean isPowerUp() {
 		return false;
 	}
 
+	/*
+	 * Override of abstract method informing if collectible is weapon
+	 */
 	@Override
 	public boolean isWeapon() {
 		return true;
 	}
 
 	public Weapon getWeapon() {
-		return w;
+		return this.w;
 	}
 
 }

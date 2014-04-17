@@ -5,55 +5,67 @@ import java.awt.Graphics;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.ArrayList;
-import java.util.Random;
 
 import bpgame.BloodyPlayground;
 import bpgame.RenderLayer;
-import bpgame.eventhandling.CollisionHandling;
-import bpgame.weapons.*;
+import bpgame.events.handling.CollisionHandling;
+import bpgame.weapons.Weapon;
 import bpgame.weapons.Weapon.WEAPON;
 import bpgame.weapons.projectiles.Projectile;
 import bpgame.weapons.projectiles.ProjectileSeedManager;
 
+/*
+ * Class carrying all player information.
+ */
 public class Player implements KeyListener, Comparable<Object> {
 	
+	// variable used for setting id of player
 	private static int playerNumber = 0;
 	
-	private static CollisionHandling ch = null;
-	
+	/*
+	 * Enum for player directions
+	 */
 	public static enum DIRECTION {
-		UP, DOWN, LEFT, RIGHT
+		UP, 
+		DOWN, 
+		LEFT, 
+		RIGHT
 	}
 	
-	private int id;
+	private static CollisionHandling ch = null;
+	private static ArrayList<Projectile> projectiles = null;
 	
+	// basic player datat
+	private int id;
 	private int x_pos, y_pos;
 	private int size = 50;
+	private DIRECTION direction;
 	
 	private Color color;
 	private String name;
 	
+	// movement
 	private int max_speed = 5;
 	private double speedMultiplier = 1.0;
 	private double bonusSpeedMultiplier = 1.5;
 	private int current_speed = 0;
 	
-	private DIRECTION direction;
-	
+	// life
 	private boolean alive = false;
 	private int spawnDelayMs = 1500;
 	private long nextSpawnTime;
 	
+	// score
 	private int deaths, kills;
 	
+	// control keys
 	private int goUp;
 	private int goDown;
 	private int goLeft;
 	private int goRight;
 	private int fire;
 	
-	private long lastShot;
-	
+	// power up states
 	private boolean puSpeedOn = false;
 	private boolean puAmmoOn = false;
 	private boolean puVestOn = false;
@@ -61,28 +73,30 @@ public class Player implements KeyListener, Comparable<Object> {
 	private boolean puRessurOn = false;
 	private boolean puPenetrateOn = false;
 	
+	// power up timings
 	private long puSpeedUntil;
 	private long puAmmoUntil;
 	private long puNoVestUntil;
 	private long puMarksmanUntil;
 	private long puRessurUntil;
 	private long puPenetrateUntil;
-
-	private RenderLayer map;
-	private Weapon w, pistolBackup = null;
-	private static ArrayList<Projectile> projectiles = null;
+	
+	private Weapon weapon;
+	private Weapon pistolBackup = null;
+	
+	private long lastShotTime;
 	
 	public Player (RenderLayer map, ArrayList<Projectile> projectiles, CollisionHandling ch) {
 
 		this.id = ++Player.playerNumber;
-		this.lastShot = System.currentTimeMillis();
+
+		if (Player.ch == null)
+			Player.ch = ch;
 		
-		this.map = map;
-		Player.ch = ch;
+		if (Player.projectiles == null)
+			Player.projectiles = projectiles;
 		
-		Player.projectiles = new ArrayList<Projectile>();
-		Player.projectiles = projectiles;
-		
+		// according to player id, set controls, name and color
 		switch(this.id)
 		{
 			case 1:
@@ -112,10 +126,30 @@ public class Player implements KeyListener, Comparable<Object> {
 				this.goRight = KeyEvent.VK_L;
 				this.fire = KeyEvent.VK_N;
 				break;
-		}
+		}	
 		
-		Random r = new Random(); 
-		switch(r.nextInt(4)+1)
+		this.spawn();
+	}
+	
+	/*
+	 * Spawn player
+	 */
+	public void spawn() {
+
+		// finding valid spawn point
+		do {
+			this.x_pos = BloodyPlayground.r.nextInt(Player.ch.getWidth());
+			this.y_pos = BloodyPlayground.r.nextInt(Player.ch.getHeight());
+		} while (!ch.isValidSpawnPosition(this.x_pos, this.y_pos, this.id));
+		
+		System.out.println(this.name+" player spawned.");
+		
+		this.alive = true;
+		this.weapon = new Weapon(WEAPON.PISTOL, this);
+		this.lastShotTime = System.currentTimeMillis()-1000; // -1000 is to make sure player cas shoot rigth after spawn
+		
+		// setting random direction
+		switch(BloodyPlayground.r.nextInt(4)+1)
 		{
 			case 1:
 				this.direction = DIRECTION.UP;
@@ -129,26 +163,14 @@ public class Player implements KeyListener, Comparable<Object> {
 			case 4:
 				this.direction = DIRECTION.RIGHT;
 				break;
-		}	
-		
-		this.spawn();
+		}
 	}
 	
-	public void spawn() {
-		Random r = new Random();
-		
-		do {
-			this.x_pos = r.nextInt(map.getWidth());
-			this.y_pos = r.nextInt(map.getHeight());
-		} while (!ch.isValidSpawnPosition(this.x_pos, this.y_pos, this.id));
-		
-		System.out.println("Player "+this.id+" spawned.");
-		this.alive = true;
-		this.w = new Weapon(WEAPON.PISTOL, this);
-	}
-	
+	/*
+	 * Kills player
+	 */
 	public void die () {
-		this.x_pos = this.y_pos = -100;
+		this.x_pos = this.y_pos = -1000; // move out of map
 		this.alive = false;
 		this.deaths++;
 		this.nextSpawnTime = System.currentTimeMillis() + (puRessurOn? 0:spawnDelayMs);
@@ -159,76 +181,93 @@ public class Player implements KeyListener, Comparable<Object> {
 		ProjectileSeedManager.deleteSeedsOfPlayer(this.id);
 	}
 	
+	/*
+	 * Fires a weapon
+	 */
 	public void fire () {
 		
-		if (System.currentTimeMillis() - this.lastShot > w.getFireDelayMs() / (puMarksmanOn? 1.5:1))
-		{			
-			if (w.fire(ch, this.isPuAmmoOn(), this.isPuPenetrateOn(), this.isPuMarksmanOn()))
+		// is enough time since last shot passed
+		if (System.currentTimeMillis() - this.lastShotTime > weapon.getFireDelayMs() / (puMarksmanOn? 1.5:1))
+		{	
+			// attempt to fire
+			if (weapon.fire(ch, this.isPuAmmoOn(), this.isPuPenetrateOn(), this.isPuMarksmanOn()))
 			{
-				this.lastShot = System.currentTimeMillis();
-				System.out.println("Player "+id+" fired.");
+				// firing successed
+				this.lastShotTime = System.currentTimeMillis();
+				System.out.println(this.name+" player fired.");
 				
-				if (w.getClipState() == 0)
+				if (weapon.getClipState() == 0) // this was last shot of weapon
 				{
-					if (w.getWeaponType() == WEAPON.PISTOL)
-						System.out.println("Player "+this.id+" started reloading.");
-					else
+					if (weapon.getWeaponType() == WEAPON.PISTOL) // pistol realoads
+						System.out.println(this.name+" player started reloading.");
+					else // other weapon is dropped
 					{
 						this.pullPistol();
-						System.out.println("Player "+this.id+" has only pistol again.");
+						System.out.println(this.name+" player has only pistol again.");
 					}
 				}
 				
 			}
-			else
+			else // no rounds - reloading
 			{
+				this.lastShotTime = System.currentTimeMillis();
 				BloodyPlayground.s.playSound("dry_fire");
 				System.out.println("Player "+this.id+" could not fire(empty clip).");
 			}
 		}
 	}
 	
+	/*
+	 * Updates player object (one tick)
+	 */
 	public void update () {
 		
-		if (this.alive)
+		if (this.alive) // alive player
 		{
-			int x = this.x_pos;
-			int y = this.y_pos;
-		
-			switch (this.direction)
+			if (this.current_speed > 0)
 			{
-				case DOWN:
-					y += current_speed*speedMultiplier;
-					break;
-				case LEFT:
-					x -= current_speed*speedMultiplier;
-					break;
-				case RIGHT:
-					x += current_speed*speedMultiplier;
-					break;
-				case UP:
-					y -= current_speed*speedMultiplier;
-					break;
-			}
+				int x = this.x_pos;
+				int y = this.y_pos;
 			
-			if (!ch.isUnblockedPosition(x, y, this.id)) // conflict
-			{
-				return;
+				switch (this.direction)
+				{
+					case DOWN:
+						y += this.current_speed*this.speedMultiplier;
+						break;
+					case LEFT:
+						x -= this.current_speed*this.speedMultiplier;
+						break;
+					case RIGHT:
+						x += this.current_speed*this.speedMultiplier;
+						break;
+					case UP:
+						y -= this.current_speed*this.speedMultiplier;
+						break;
+				}
+				
+				if (ch.isUnblockedPosition(x, y, this.id)) // conflict
+				{
+					this.x_pos = x;
+					this.y_pos = y;
+				}
 			}
-			else
-			{
-				this.x_pos = x;
-				this.y_pos = y;
-			}
-			
-			if (w.getClipState() == 0)
-				w.update();
+
+			if (weapon.getClipState() == 0)
+				weapon.checkForReloadFinish();
 		}
-		else
+		else // dead player
 		{
 			if (nextSpawnTime < System.currentTimeMillis())
 				this.spawn();
 		}
+	
+		this.updatePowerUps();
+	}
+
+	/*
+	 * Updates states of players powerups
+	 */
+	private void updatePowerUps() {
 		
 		if (this.puAmmoOn && this.puAmmoUntil < System.currentTimeMillis())
 		{
@@ -265,9 +304,12 @@ public class Player implements KeyListener, Comparable<Object> {
 			this.puSpeedOn = false;
 			this.speedMultiplier = 1.0;
 			System.out.println("Bonus Sprint of Player "+id+" expired.");
-		}
+		}	
 	}
 
+	/*
+	 * Render player
+	 */
 	public void render (Graphics g) {
 		
 		if (this.puVestOn)
@@ -315,6 +357,9 @@ public class Player implements KeyListener, Comparable<Object> {
 		g.drawLine(this.x_pos, this.y_pos, x, y);
 	}
 
+	/*
+     * Reactions to presses of some keys
+	 */
 	@Override
 	public void keyPressed(KeyEvent e) {
 		
@@ -324,23 +369,24 @@ public class Player implements KeyListener, Comparable<Object> {
 		{
 			if (this.alive)
 				this.fire();
+			
+			return;
 		}
-		
-		if (e.getKeyCode() == goUp )
+		else if (e.getKeyCode() == this.goUp )
 		{
-			direction = DIRECTION.UP;
+			this.direction = DIRECTION.UP;
 		}
-		else if (e.getKeyCode() == goDown)
+		else if (e.getKeyCode() == this.goDown)
 		{
-			direction = DIRECTION.DOWN;
+			this.direction = DIRECTION.DOWN;
 		}	
-		else if (e.getKeyCode() == goLeft)
+		else if (e.getKeyCode() == this.goLeft)
 		{
-			direction = DIRECTION.LEFT;
+			this.direction = DIRECTION.LEFT;
 		}	
-		else if (e.getKeyCode() == goRight)
+		else if (e.getKeyCode() == this.goRight)
 		{
-			direction = DIRECTION.RIGHT;
+			this.direction = DIRECTION.RIGHT;
 		}	
 		else
 		{
@@ -355,36 +401,37 @@ public class Player implements KeyListener, Comparable<Object> {
 			ProjectileSeedManager.deleteSeedsOfPlayer(this.id);
 		}
 		
-		current_speed = max_speed;
+		this.current_speed = this.max_speed;
 	}
 
+	/*
+     * Reactions to releases of some keys
+	 */
 	@Override
 	public void keyReleased (KeyEvent e) {
-		
 		switch (this.direction)
 		{
 			case DOWN:
-				if (e.getKeyCode() == goDown) current_speed = 0;
+				if (e.getKeyCode() == this.goDown) 
+					current_speed = 0;
 				break;
 			case LEFT:
-				if (e.getKeyCode() == goLeft) current_speed = 0;
+				if (e.getKeyCode() == this.goLeft) 
+					current_speed = 0;
 				break;
 			case RIGHT:
-				if (e.getKeyCode() == goRight) current_speed = 0;
+				if (e.getKeyCode() == this.goRight) 
+					current_speed = 0;
 				break;
 			case UP:
-				if (e.getKeyCode() == goUp) current_speed = 0;
+				if (e.getKeyCode() == this.goUp) 
+					current_speed = 0;
 				break;
-		}
-		
+		}	
 	}
 
 	@Override
 	public void keyTyped(KeyEvent arg0) {}
-
-	public int getX_pos() {
-		return x_pos;
-	}
 	
 	public static ArrayList<Projectile> getProjectiles () {
 		return Player.projectiles;
@@ -392,15 +439,19 @@ public class Player implements KeyListener, Comparable<Object> {
 	
 	
 	public static CollisionHandling getCh() {
-		return ch;
+		return Player.ch;
 	}
 
 	public void addKill() {
 		kills++;
 	}
 
-	public int getY_pos() {
+	public int getY() {
 		return y_pos;
+	}
+	
+	public int getX() {
+		return this.x_pos;
 	}
 	
 	public int getSize() {
@@ -428,16 +479,16 @@ public class Player implements KeyListener, Comparable<Object> {
 	}
 
 	public Weapon getWeapon() {
-		return w;
+		return weapon;
 	}
 	
 	public void setWeapon(Weapon w) {
-		this.pistolBackup = (this.w.getWeaponType()==WEAPON.PISTOL)? this.w:new Weapon(WEAPON.PISTOL, this);
-		this.w = w;
+		this.pistolBackup = (this.weapon.getWeaponType()==WEAPON.PISTOL)? this.weapon:new Weapon(WEAPON.PISTOL, this);
+		this.weapon = w;
 	}
 	
 	public void pullPistol () {
-		this.w = this.pistolBackup;
+		this.weapon = this.pistolBackup;
 	}
 
 	public void setPuSpeedOn(int duration) {
@@ -503,9 +554,10 @@ public class Player implements KeyListener, Comparable<Object> {
 	public int compareTo (Object o) {
 		
 		Player pl = (Player)o;
-	    final int BEFORE = -1;
-	    final int EQUAL = 0;
-	    final int AFTER = 1;
+		
+	    int BEFORE = -1;
+	    int EQUAL = 0;
+	    int AFTER = 1;
 	    
 	    if (this.kills > pl.getKills())
 	    	return BEFORE;

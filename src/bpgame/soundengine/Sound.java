@@ -49,7 +49,7 @@ public class Sound {
 	}
 	
 	public static URL getURL(String fileName) {
-		return staticSound.getClass().getResource("../lib/sounds/"+fileName);
+		return staticSound.getClass().getResource("../resources/sounds/"+fileName);
 	}
 
 }

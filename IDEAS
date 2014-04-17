@@ -1,11 +1,27 @@
 This is file just for storing ideas for future development of the game
 
+GENERAL
+-------
+- results screen controls
+- escape -> back to menu
+
 GAMEPLAY
 --------
 - suprise powerup
 - players place obstacles
 - different floors, different speed
-- stacking of weapons
+- changing weapons + reload reset on change
+- reload
+
+WEAPONS
+-------
+- rocket launcher
+- claymore
+- grenade
+
+POWER UPS
+--------
+- shiled
 
 GAME MODES
 ----------
@@ -32,3 +48,9 @@ GUI
 - disabling cursor
 - cursor
 - ingame: face according to score
+
+SETTINGS
+--------
+- death reset powerups
+- contrls settings
+- spawn delay 

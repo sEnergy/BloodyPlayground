@@ -5,31 +5,33 @@ import java.util.Arrays;
 
 import bpgame.player.Player;
 
+/*
+ * Class carrying result of ended game.
+ */
 public class GameResults {
 	
-	Player[] order;
-	
-	int players; 
+	private Player[] players;
+	private int playerNumber; 
 	
 	public GameResults (ArrayList<Player> pls) {
-		players = pls.size();
+		playerNumber = pls.size();
 		
-		order = new Player [players];
+		players = new Player [playerNumber];
 		
-		for (int i = 0; i < players; ++i) 
+		for (int i = 0; i < playerNumber; ++i) 
 		{
-			order[i] = pls.get(i);
+			players[i] = pls.get(i);
 		}
 		
-		Arrays.sort(order);
+		Arrays.sort(players);
 	}
 	
 	public int getPlayersNumber () {
-		return this.players;
+		return this.playerNumber;
 	}
 	
 	public Player getPlayer (int i) {
-		return this.order[i];
+		return this.players[i];
 	}
 
 }

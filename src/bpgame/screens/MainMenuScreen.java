@@ -8,20 +8,25 @@ import java.awt.event.MouseListener;
 
 import bpgame.RenderLayer;
 
+/*
+ * Main menu screen of program
+ */
 public class MainMenuScreen extends AbstractScreen implements MouseListener {
 	
-	private final int SAFE_TIME = 100;
+	private final int SAFE_TIME = 100; // period of time after intialiyation of screen, when no buttins work
 	private long workingSince;
 	
 	public MainMenuScreen (RenderLayer layer) {
 		super(layer);
 		this.layer.addMouseListener(this);
+		this.layer.setSize(layer.getProgramSettings().getCanvasDimension());
 		this.workingSince = System.currentTimeMillis()+SAFE_TIME;
-		System.out.println("WS: "+workingSince+"\n");
 	}
 
 	@Override
 	public void render(Graphics g) {
+		
+		this.getRenderDimensions();
 		
 		// background
 		g.setColor(Color.LIGHT_GRAY);
@@ -77,6 +82,9 @@ public class MainMenuScreen extends AbstractScreen implements MouseListener {
         g.drawString(b3, start, 660); 
 	}
 	
+	/*
+	 * Clicks on buttons
+	 */
 	@Override
 	public void mousePressed(MouseEvent e) {
 		
@@ -108,16 +116,13 @@ public class MainMenuScreen extends AbstractScreen implements MouseListener {
 	public void update() {}
 
 	@Override
-	public void mouseClicked(MouseEvent arg0) {		
-	}
+	public void mouseClicked(MouseEvent arg0) {}
 
 	@Override
-	public void mouseEntered(MouseEvent arg0) {
-	}
+	public void mouseEntered(MouseEvent arg0) {}
 
 	@Override
-	public void mouseExited(MouseEvent arg0) {
-	}
+	public void mouseExited(MouseEvent arg0) {}
 
 	@Override
 	public void mouseReleased(MouseEvent arg0) {}

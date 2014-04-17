@@ -1,16 +1,20 @@
 package bpgame.weapons;
 
-import java.util.Random;
-
 import bpgame.BloodyPlayground;
-import bpgame.eventhandling.CollisionHandling;
+import bpgame.events.handling.CollisionHandling;
 import bpgame.player.Player;
 import bpgame.weapons.projectiles.Projectile;
 import bpgame.weapons.projectiles.ProjectileSeedManager;
 import bpgame.weapons.projectiles.Vector;
 
+/*
+ * Weapon of players
+ */
 public class Weapon {
 	
+	/*
+	 * Enum for weapon types
+	 */
 	public enum WEAPON {
 		PISTOL,
 		SHOTGUN,
@@ -34,6 +38,7 @@ public class Weapon {
 		this.pl = pl;
 		this.reloadCompleteTime = System.currentTimeMillis();
 		
+		// set weapon attributes according to type
 		switch (this.type)
 		{
 			case PISTOL:
@@ -58,12 +63,17 @@ public class Weapon {
 		}	
 	}
 	
+	/*
+	 * Fires a weapon, returns whether the attempt to fire was succesfull of not
+	 */
 	public boolean fire (CollisionHandling ch, boolean unlimitedAmmo, boolean penetrating, boolean marksman) {
 		
-		if (clipState > 0)
+		if (clipState > 0) // weapon has ammo
 		{
-			if (!unlimitedAmmo) --clipState;
+			if (!unlimitedAmmo) // if unlimited ammo is off, decrement clipState
+				--clipState;
 			
+			// if clip state is zero and weapon is pistol, start reloading
 			if (type == WEAPON.PISTOL && clipState == 0)
 			{
 				this.reloadCompleteTime = System.currentTimeMillis()+reloadDelayMs/(marksman? 2:1);
@@ -72,111 +82,121 @@ public class Weapon {
 			
 			switch(this.type)
 			{
-			case PISTOL:
-				BloodyPlayground.s.playSound("weapon_pistol");
-				ProjectileSeedManager.addSeed(this.pl, 0);
-				break;
-			case SHOTGUN: {
-				
-				if (this.clipState > 0)
-				{
-					if (marksman)
-						BloodyPlayground.s.playSound("weapon_shotgun_marksman");
-					else
-						BloodyPlayground.s.playSound("weapon_shotgun");
-				}
-				else
-					BloodyPlayground.s.playSound("weapon_shotgun_nopump");
-				
-				int x1, x2;
-				int y1 = 2, y2 = 4;
-				
-				x1 = x2 = Projectile.getDEFAULT_SPEED();
-				
-				switch(this.pl.getDirection())
-				{
-					case UP:
-						x2 = x1 *= -1;
-					case DOWN:
-						ProjectileSeedManager.addSeed(this.pl, penetrating, 0, new Vector(y1, x1));
-						ProjectileSeedManager.addSeed(this.pl, penetrating, 0, new Vector(y2, x2));
-						ProjectileSeedManager.addSeed(this.pl, penetrating, 0, new Vector(-y1, x1));
-						ProjectileSeedManager.addSeed(this.pl, penetrating, 0, new Vector(-y2, x2));
-						ProjectileSeedManager.addSeed(this.pl, 0);
-						break;
-					case LEFT:
-						x2 = x1 *= -1;
-					case RIGHT:
-						ProjectileSeedManager.addSeed(this.pl, penetrating, 0, new Vector(x1, y1));
-						ProjectileSeedManager.addSeed(this.pl, penetrating, 0, new Vector(x2, y2));
-						ProjectileSeedManager.addSeed(this.pl, penetrating, 0, new Vector(x1, -y1));
-						ProjectileSeedManager.addSeed(this.pl, penetrating, 0, new Vector(x2, -y2));
-						ProjectileSeedManager.addSeed(this.pl, 0);
-						break;
-				}
-				
-				}break;
-			case SMG: {
-				BloodyPlayground.s.playSound("weapon_smg");
-				int x1, x2;
-				int y1 = 1, y2 = 2;
-				
-				x1 = x2 = Projectile.getDEFAULT_SPEED();
-				
-				int[] delays = {0,100,200,300,400};
-				Random r = new Random();
-				
-				for(int n = 0; n < 5; n++)
-				{
-					int i1 = r.nextInt(5);
-					int i2 = r.nextInt(5);
+				case PISTOL:
+					BloodyPlayground.s.playSound("weapon_pistol");
+					ProjectileSeedManager.addSeed(this.pl, 0);
+					break;
+				case SHOTGUN: {
 					
-					int tmp = delays[i1];
-					delays[i1] = delays[i2];
-					delays[i2] = tmp;
-				}
-				
-				switch(this.pl.getDirection())
-				{
-					case UP:
-						x2 = x1 *= -1;
-					case DOWN:
-						ProjectileSeedManager.addSeed(this.pl, penetrating, delays[0], new Vector(y1, x1));
-						ProjectileSeedManager.addSeed(this.pl, penetrating, delays[1], new Vector(y2, x2));
-						ProjectileSeedManager.addSeed(this.pl, penetrating, delays[2], new Vector(-y1, x1));
-						ProjectileSeedManager.addSeed(this.pl, penetrating, delays[3], new Vector(-y2, x2));
-						ProjectileSeedManager.addSeed(this.pl, delays[4]);
-						break;
-					case LEFT:
-						x2 = x1 *= -1;
-					case RIGHT:
-						ProjectileSeedManager.addSeed(this.pl, penetrating, delays[0], new Vector(x1, y1));
-						ProjectileSeedManager.addSeed(this.pl, penetrating, delays[1], new Vector(x2, y2));
-						ProjectileSeedManager.addSeed(this.pl, penetrating, delays[2], new Vector(x1, -y1));
-						ProjectileSeedManager.addSeed(this.pl, penetrating, delays[3], new Vector(x2, -y2));
-						ProjectileSeedManager.addSeed(this.pl, delays[4]);
-						break;
-				}
-				}break;			
+					if (this.clipState > 0)
+					{
+						if (marksman)
+							BloodyPlayground.s.playSound("weapon_shotgun_marksman");
+						else
+							BloodyPlayground.s.playSound("weapon_shotgun");
+					}
+					else
+						BloodyPlayground.s.playSound("weapon_shotgun_nopump");
+					
+					// set default elemets of vectors
+					int x1, x2;
+					int y1 = 2, y2 = 4;
+					x1 = x2 = Projectile.getDEFAULT_SPEED();
+					
+					/*
+					 * Transform vector elements according to direction,
+					 * plant projectile seeds.
+					 */
+					switch(this.pl.getDirection())
+					{
+						case UP:
+							x2 = x1 *= -1;
+						case DOWN:
+							ProjectileSeedManager.addSeed(this.pl, 0, new Vector(y1, x1));
+							ProjectileSeedManager.addSeed(this.pl, 0, new Vector(y2, x2));
+							ProjectileSeedManager.addSeed(this.pl, 0, new Vector(-y1, x1));
+							ProjectileSeedManager.addSeed(this.pl, 0, new Vector(-y2, x2));
+							ProjectileSeedManager.addSeed(this.pl, 0);
+							break;
+						case LEFT:
+							x2 = x1 *= -1;
+						case RIGHT:
+							ProjectileSeedManager.addSeed(this.pl, 0, new Vector(x1, y1));
+							ProjectileSeedManager.addSeed(this.pl, 0, new Vector(x2, y2));
+							ProjectileSeedManager.addSeed(this.pl, 0, new Vector(x1, -y1));
+							ProjectileSeedManager.addSeed(this.pl, 0, new Vector(x2, -y2));
+							ProjectileSeedManager.addSeed(this.pl, 0);
+							break;
+					}
+					
+					}break;
+				case SMG: {
+					BloodyPlayground.s.playSound("weapon_smg");
+					
+					// set default elemets of vectors
+					int x1, x2;
+					int y1 = 1, y2 = 2;
+					x1 = x2 = Projectile.getDEFAULT_SPEED();
+					
+					// making unsorted array of projectile delays,
+					int[] delays = {0,100,200,300,400};
+					
+					for(int n = 0; n < 5; n++)
+					{
+						int i1 = BloodyPlayground.r.nextInt(5);
+						int i2 = BloodyPlayground.r.nextInt(5);
+						
+						int tmp = delays[i1];
+						delays[i1] = delays[i2];
+						delays[i2] = tmp;
+					}
+					
+					/*
+					 * Transform vector elements according to direction,
+					 * plant projectile seeds.
+					 */
+					switch(this.pl.getDirection())
+					{
+						case UP:
+							x2 = x1 *= -1;
+						case DOWN:
+							ProjectileSeedManager.addSeed(this.pl, delays[0], new Vector(y1, x1));
+							ProjectileSeedManager.addSeed(this.pl, delays[1], new Vector(y2, x2));
+							ProjectileSeedManager.addSeed(this.pl, delays[2], new Vector(-y1, x1));
+							ProjectileSeedManager.addSeed(this.pl, delays[3], new Vector(-y2, x2));
+							ProjectileSeedManager.addSeed(this.pl, delays[4]);
+							break;
+						case LEFT:
+							x2 = x1 *= -1;
+						case RIGHT:
+							ProjectileSeedManager.addSeed(this.pl, delays[0], new Vector(x1, y1));
+							ProjectileSeedManager.addSeed(this.pl, delays[1], new Vector(x2, y2));
+							ProjectileSeedManager.addSeed(this.pl, delays[2], new Vector(x1, -y1));
+							ProjectileSeedManager.addSeed(this.pl, delays[3], new Vector(x2, -y2));
+							ProjectileSeedManager.addSeed(this.pl, delays[4]);
+							break;
+					}
+					}break;			
 			}
 			
 			return true;
 		}
-		else
+		else // empty clip
 		{
 			return false;
 		}
 	}
 	
-	public void update () {
+	/*
+	 * Test if weapon is finished reloading
+	 */
+	public void checkForReloadFinish () {
 		if (reloadCompleteTime < System.currentTimeMillis())
 		{
 			clipState = clipSize;
-			System.out.println("Player "+pl.getId()+" finished reloading.");
+			System.out.println(pl.getName()+" player finished reloading.");
 		}
-
 	}
-	
 	
 	public void setPlayer (Player pl) {
 		this.pl = pl;
@@ -199,6 +219,6 @@ public class Weapon {
 	}
 	
 	public int getRemainingReloadTime () {
-		return (int)Math.abs(reloadCompleteTime - System.currentTimeMillis())/1000;
+		return (int) Math.abs(reloadCompleteTime - System.currentTimeMillis())/1000;
 	}
 }

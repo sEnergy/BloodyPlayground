@@ -1,12 +1,13 @@
 package bpgame.weapons.projectiles;
 
 import bpgame.player.Player;
-import bpgame.weapons.Weapon;
 
+/*
+ * Seed of projetile - preparational stage of projectile
+ */
 public class ProjectileSeed {
 	
 	private long spawnTime;
-	private Weapon w;
 	private boolean penetrating;
 	private Player pl;
 	
@@ -14,7 +15,6 @@ public class ProjectileSeed {
 	
 	public ProjectileSeed (Player pl, int delayMs) {
 		this.pl = pl;
-		this.w = pl.getWeapon();
 		this.penetrating = pl.isPuPenetrateOn();
 		this.spawnTime = System.currentTimeMillis() + delayMs;
 	}
@@ -26,10 +26,6 @@ public class ProjectileSeed {
 
 	public long getSpawnTime() {
 		return spawnTime;
-	}
-
-	public Weapon getW() {
-		return w;
 	}
 
 	public boolean isPenetrating() {

@@ -20,6 +20,9 @@ public class PauseScreen extends AbstractScreen implements MouseListener {
 	
 	@Override
 	public void render(Graphics g) {
+		
+		this.getRenderDimensions();
+		
 		int midX = layer.getWidth()/2;
 		int midY = layer.getHeight()/2-100;
 		

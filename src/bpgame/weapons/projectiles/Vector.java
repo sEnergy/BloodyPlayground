@@ -1,5 +1,8 @@
 package bpgame.weapons.projectiles;
 
+/*
+ * Vector of projectile movement
+ */
 public class Vector {
 	
 	private int x, y;

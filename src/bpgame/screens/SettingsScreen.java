@@ -1,30 +1,39 @@
 package bpgame.screens;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Toolkit;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
+import bpgame.BloodyPlayground;
 import bpgame.RenderLayer;
 import bpgame.gamedata.GameSettings;
+import bpgame.program.ProgramSettings;
 
 public class SettingsScreen extends AbstractScreen implements MouseListener{
 	
 	private final int SAFE_TIME = 100;
 	private final long workingSince;
 	
-	private GameSettings settings;
+	private GameSettings gameSettings;
+	ProgramSettings programSettings;
 	
 	public SettingsScreen (RenderLayer layer, GameSettings settings) {
 		super(layer);
 		this.layer.addMouseListener(this);
 		this.workingSince = System.currentTimeMillis()+SAFE_TIME;
-		this.settings = settings;
+		this.gameSettings = settings;
+		this.programSettings = layer.getProgramSettings();
+		this.layer.setSize(layer.getProgramSettings().getCanvasDimension());
 	}
 
 	@Override
 	public void render(Graphics g) {
+		
+		this.getRenderDimensions();
 		
 		// background
 		g.setColor(Color.LIGHT_GRAY);
@@ -62,7 +71,7 @@ public class SettingsScreen extends AbstractScreen implements MouseListener{
      	Font textM = new Font("Verdana", Font.PLAIN, 30);
      	
      	String b1 = "Number of players";
-     	int players = settings.getPlayers();
+     	int players = gameSettings.getPlayers();
      	String b3 = "Back";
      	
      	/********* PLAYER NUMBER ***********/
@@ -88,7 +97,7 @@ public class SettingsScreen extends AbstractScreen implements MouseListener{
         
         /********* END VALUE ***********/
         b1 = "Win condition (kills)";
-        int cond = settings.getEndValue();
+        int cond = gameSettings.getEndValue();
         
      	g.setFont(textM);
      	stringLen = (int) g.getFontMetrics().getStringBounds(b1, g).getWidth();  
@@ -108,12 +117,46 @@ public class SettingsScreen extends AbstractScreen implements MouseListener{
         g.drawString("+", middle+28, 418);
         /*********** END VALUE END :) *********/
         
+        /********* RESOULTION ***********/
+        b1 = "Resolution";
+        String res = this.programSettings.getCanvasX()+"x"+this.programSettings.getCanvasY();
+        
+     	g.setFont(textM);
+     	stringLen = (int) g.getFontMetrics().getStringBounds(b1, g).getWidth();  
+        start = width/2 - stringLen/2;  
+        g.drawString(b1, start, 460);
+        
+        // players number
+        stringLen = (int) g.getFontMetrics().getStringBounds(res, g).getWidth();  
+        start = width/2 - stringLen/2;  
+        g.drawString(res, start, 500);
+        
+        g.setColor(Color.YELLOW);
+        g.fillRect(middle-100, 479, 19, 19);
+        g.fillRect(middle+100, 479, 19, 19);
+        g.setColor(Color.BLACK);
+        g.drawString("-", middle-97, 499);
+        g.drawString("+", middle+98, 499);
+        /*********** RESOULTION END :) *********/
+        
         // back button
         g.setColor(Color.BLACK);
         g.setFont(butt);
         stringLen = (int) g.getFontMetrics().getStringBounds(b3, g).getWidth();  
         start = width/2 - stringLen/2;  
         g.drawString(b3, start, 660); 
+        
+        g.drawLine(0, 0, 1280, 720);
+        g.drawLine(1200, 0, 1280, 720);
+        
+        g.drawLine(0, 0, 1366, 768);
+        g.drawLine(1300, 0, 1366, 768);
+        
+        g.drawLine(0, 0, 1600, 900);
+        g.drawLine(1500, 0, 1600, 900);
+        
+        g.drawLine(0, 0, 1920, 1080);
+        g.drawLine(1800, 0, 1920, 1080);
 	}
 	
 	@Override
@@ -130,23 +173,56 @@ public class SettingsScreen extends AbstractScreen implements MouseListener{
 			}
 			else if (x > width/2-40 && x < width/2-40+19 && y > 319 && y < 319+19)
 			{
-				int tmp = settings.getPlayers();
-				settings.setPlayers((tmp>2)? --tmp:tmp);
+				int tmp = gameSettings.getPlayers();
+				gameSettings.setPlayers((tmp>2)? --tmp:tmp);
 			}
 			else if (x > width/2+20 && x < width/2+20+19 && y > 319 && y < 319+19)
 			{
-				int tmp = settings.getPlayers();
-				settings.setPlayers((tmp<3)? ++tmp:tmp);
+				int tmp = gameSettings.getPlayers();
+				gameSettings.setPlayers((tmp<3)? ++tmp:tmp);
 			}
 			else if (x > width/2-40 && x < width/2-40+19 && y > 319+80 && y < 319+19+80)
 			{
-				int tmp = settings.getEndValue();
-				settings.setEndValue((tmp>1)? --tmp:tmp);
+				int tmp = gameSettings.getEndValue();
+				gameSettings.setEndValue((tmp>1)? --tmp:tmp);
 			}
 			else if (x > width/2+20 && x < width/2+20+19 && y > 319+80 && y < 319+19+80)
 			{
-				int tmp = settings.getEndValue();
-				settings.setEndValue((tmp<50)? ++tmp:tmp);
+				int tmp = gameSettings.getEndValue();
+				gameSettings.setEndValue((tmp<50)? ++tmp:tmp);
+			}
+			
+			else if (x > width/2-10-100 && x < width/2-10-100+19 && y > 479 && y < 479+19)
+			{
+				this.programSettings.setResolution(-1);
+				this.layer.setSize(programSettings.getCanvasDimension());
+				
+				BloodyPlayground frame = this.layer.getFrame(); 
+				Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+				
+				int frameXpos = (int) screenSize.getWidth()/2-programSettings.getCanvasX()/2;
+				int frameYpos = (int) screenSize.getHeight()/2-programSettings.getCanvasY()/2;
+				
+				frame.setVisible(false);
+				frame.setSize(programSettings.getFrameDimension());
+				frame.setLocation(frameXpos,frameYpos);
+				frame.setVisible(true);
+			}
+			else if (x > width/2-10+100 && x < width/2-10+100+19 && y > 479 && y < 479+19)
+			{
+				this.programSettings.setResolution(1);
+				this.layer.setSize(programSettings.getCanvasDimension());
+				
+				BloodyPlayground frame = this.layer.getFrame(); 
+				Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+				
+				int frameXpos = (int) screenSize.getWidth()/2-programSettings.getCanvasX()/2;
+				int frameYpos = (int) screenSize.getHeight()/2-programSettings.getCanvasY()/2;
+				
+				frame.setVisible(false);
+				frame.setSize(programSettings.getFrameDimension());
+				frame.setLocation(frameXpos,frameYpos);
+				frame.setVisible(true);
 			}
 		}
 	}
