@@ -2,6 +2,7 @@ package bpgame.program;
 
 import java.awt.Dimension;
 import java.awt.Insets;
+import java.awt.Toolkit;
 
 import bpgame.BloodyPlayground;
 
@@ -112,6 +113,16 @@ public class ProgramSettings {
 
 	public int getCanvasY() {
 		return this.y;
+	}
+
+	/*
+	 * Sets correct size of frame and canvas accroding to current fullscreen resolution 
+	 */
+	public void setFullScreenResolution() {
+		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+		this.x = (int) screenSize.getWidth();
+		this.y = (int) screenSize.getHeight();
+		this.computeDimensions();
 	}
 
 }

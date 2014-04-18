@@ -22,10 +22,11 @@ public class MainMenuScreen extends AbstractScreen implements MouseListener {
 		this.layer.setSize(layer.getProgramSettings().getCanvasDimension());
 		this.workingSince = System.currentTimeMillis()+SAFE_TIME;
 	}
-
+	
 	@Override
 	public void render(Graphics g) {
 		
+		this.setAntialiasing(g);
 		this.getRenderDimensions();
 		
 		// background

@@ -36,7 +36,9 @@ public class ProjectileSeedManager {
 			if (s.getSpawnTime() < System.currentTimeMillis())
 			{
 				if (s.getVector() == null)
+				{
 					ProjectileSeedManager.projectiles.add(new Projectile(s.getPl(), Player.getCh(), s.isPenetrating()));
+				}
 				else
 				{
 					ProjectileSeedManager.projectiles.add(new Projectile(s.getPl(), Player.getCh(), s.isPenetrating(), s.getVector()));

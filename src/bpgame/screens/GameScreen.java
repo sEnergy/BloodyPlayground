@@ -37,6 +37,7 @@ public class GameScreen extends AbstractScreen implements KeyListener {
 		
 		super(layer);
 		
+		this.layer.setFocusable(true);
 		this.layer = layer;
 		this.gameSettings = layer.getGameSettings();
 		
@@ -45,7 +46,6 @@ public class GameScreen extends AbstractScreen implements KeyListener {
 		this.players = new ArrayList<Player>();
 		this.projectiles = new ArrayList<Projectile>();
 		this.cm = new CollectiblesManager (this.ch);
-		this.psm = new ProjectileSeedManager();
 		
 		this.layer.setSize(layer.getProgramSettings().getCanvasDimension());
 		
@@ -62,13 +62,15 @@ public class GameScreen extends AbstractScreen implements KeyListener {
 			this.players.add(tmp);
 		}
 		
+		this.psm = new ProjectileSeedManager();
 		layer.addKeyListener(this);
 	}
 
 	@Override
 	public void render (Graphics g) {
 		
-		//this.computeRenderDimensions();
+		this.setAntialiasing(g);
+		this.getRenderDimensions();
 		
 		g.setColor(new Color(247,247,247));
 		g.fillRect(0, 0, this.layer.getWidth(), this.layer.getHeight());

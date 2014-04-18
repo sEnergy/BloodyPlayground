@@ -14,7 +14,7 @@ import bpgame.player.Player;
 public class ResultsScreen extends AbstractScreen {
 	
 	private final int DURATION_MS = 10000;
-	private final long ShownTill = System.currentTimeMillis()+DURATION_MS; 
+	private final long SHOWN_TILL = System.currentTimeMillis()+DURATION_MS; 
 	
 	GameResults results;
 
@@ -26,6 +26,7 @@ public class ResultsScreen extends AbstractScreen {
 	@Override
 	public void render(Graphics g) {
 		
+		this.setAntialiasing(g);
 		this.getRenderDimensions();
 		
 		// background
@@ -66,7 +67,7 @@ public class ResultsScreen extends AbstractScreen {
 	public void update() {}
 	
 	public boolean expired () {
-		return (ShownTill < System.currentTimeMillis());
+		return (SHOWN_TILL < System.currentTimeMillis());
 	}
 
 }

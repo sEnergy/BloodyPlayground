@@ -2,6 +2,7 @@ package bpgame.player;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.ArrayList;
@@ -17,7 +18,7 @@ import bpgame.weapons.projectiles.ProjectileSeedManager;
 /*
  * Class carrying all player information.
  */
-public class Player implements KeyListener, Comparable<Object> {
+public class Player extends KeyAdapter implements KeyListener, Comparable<Object> {
 	
 	// variable used for setting id of player
 	private static int playerNumber = 0;
@@ -106,16 +107,16 @@ public class Player implements KeyListener, Comparable<Object> {
 				this.goDown = KeyEvent.VK_NUMPAD5;
 				this.goLeft = KeyEvent.VK_NUMPAD4;
 				this.goRight = KeyEvent.VK_NUMPAD6;
-				this.fire = KeyEvent.VK_NUMPAD1;
+				this.fire = KeyEvent.VK_NUMPAD0;
 				break;
 			case 2:
 				this.color = Color.YELLOW;
 				this.name = "Yellow";
-				this.goUp = KeyEvent.VK_E;
-				this.goDown = KeyEvent.VK_D;
-				this.goLeft = KeyEvent.VK_S;
-				this.goRight = KeyEvent.VK_F;
-				this.fire = KeyEvent.VK_A;
+				this.goUp = KeyEvent.VK_W;
+				this.goDown = KeyEvent.VK_S;
+				this.goLeft = KeyEvent.VK_A;
+				this.goRight = KeyEvent.VK_D;
+				this.fire = KeyEvent.VK_CONTROL;
 				break;
 			case 3:
 				this.color = Color.RED;
@@ -124,7 +125,7 @@ public class Player implements KeyListener, Comparable<Object> {
 				this.goDown = KeyEvent.VK_K;
 				this.goLeft = KeyEvent.VK_J;
 				this.goRight = KeyEvent.VK_L;
-				this.fire = KeyEvent.VK_N;
+				this.fire = KeyEvent.VK_SPACE;
 				break;
 		}	
 		
@@ -363,35 +364,35 @@ public class Player implements KeyListener, Comparable<Object> {
 	@Override
 	public void keyPressed(KeyEvent e) {
 		
-		DIRECTION original = this.direction;
+		int keyCode = e.getKeyCode();
 		
-		if (e.getKeyCode() == fire )
+		if (keyCode == this.fire)
 		{
 			if (this.alive)
 				this.fire();
-			
-			return;
 		}
-		else if (e.getKeyCode() == this.goUp )
+		
+		DIRECTION original = this.direction;
+		if (keyCode == this.goUp )
 		{
 			this.direction = DIRECTION.UP;
+			this.current_speed = this.max_speed;
 		}
-		else if (e.getKeyCode() == this.goDown)
-		{
-			this.direction = DIRECTION.DOWN;
-		}	
-		else if (e.getKeyCode() == this.goLeft)
+		else if (keyCode == this.goLeft)
 		{
 			this.direction = DIRECTION.LEFT;
+			this.current_speed = this.max_speed;
 		}	
-		else if (e.getKeyCode() == this.goRight)
+		else if (keyCode == this.goRight)
 		{
 			this.direction = DIRECTION.RIGHT;
-		}	
-		else
-		{
-			return;
+			this.current_speed = this.max_speed;
 		}
+		else if (keyCode == this.goDown)
+		{
+			this.direction = DIRECTION.DOWN;
+			this.current_speed = this.max_speed;
+		}		
 		
 		if (original != this.direction)
 		{
@@ -400,8 +401,6 @@ public class Player implements KeyListener, Comparable<Object> {
 			
 			ProjectileSeedManager.deleteSeedsOfPlayer(this.id);
 		}
-		
-		this.current_speed = this.max_speed;
 	}
 
 	/*

@@ -33,6 +33,7 @@ public class SettingsScreen extends AbstractScreen implements MouseListener{
 	@Override
 	public void render(Graphics g) {
 		
+		this.setAntialiasing(g);
 		this.getRenderDimensions();
 		
 		// background
@@ -118,25 +119,28 @@ public class SettingsScreen extends AbstractScreen implements MouseListener{
         /*********** END VALUE END :) *********/
         
         /********* RESOULTION ***********/
-        b1 = "Resolution";
-        String res = this.programSettings.getCanvasX()+"x"+this.programSettings.getCanvasY();
-        
-     	g.setFont(textM);
-     	stringLen = (int) g.getFontMetrics().getStringBounds(b1, g).getWidth();  
-        start = width/2 - stringLen/2;  
-        g.drawString(b1, start, 460);
-        
-        // players number
-        stringLen = (int) g.getFontMetrics().getStringBounds(res, g).getWidth();  
-        start = width/2 - stringLen/2;  
-        g.drawString(res, start, 500);
-        
-        g.setColor(Color.YELLOW);
-        g.fillRect(middle-100, 479, 19, 19);
-        g.fillRect(middle+100, 479, 19, 19);
-        g.setColor(Color.BLACK);
-        g.drawString("-", middle-97, 499);
-        g.drawString("+", middle+98, 499);
+        if (!this.layer.getFrame().isFullScreenOn())
+        {
+        	b1 = "Resolution";
+            String res = this.programSettings.getCanvasX()+"x"+this.programSettings.getCanvasY();
+            
+         	g.setFont(textM);
+         	stringLen = (int) g.getFontMetrics().getStringBounds(b1, g).getWidth();  
+            start = width/2 - stringLen/2;  
+            g.drawString(b1, start, 460);
+            
+            // players number
+            stringLen = (int) g.getFontMetrics().getStringBounds(res, g).getWidth();  
+            start = width/2 - stringLen/2;  
+            g.drawString(res, start, 500);
+            
+            g.setColor(Color.YELLOW);
+            g.fillRect(middle-100, 479, 19, 19);
+            g.fillRect(middle+100, 479, 19, 19);
+            g.setColor(Color.BLACK);
+            g.drawString("-", middle-97, 499);
+            g.drawString("+", middle+98, 499);
+        }
         /*********** RESOULTION END :) *********/
         
         // back button
@@ -146,6 +150,7 @@ public class SettingsScreen extends AbstractScreen implements MouseListener{
         start = width/2 - stringLen/2;  
         g.drawString(b3, start, 660); 
         
+        /*
         g.drawLine(0, 0, 1280, 720);
         g.drawLine(1200, 0, 1280, 720);
         
@@ -157,6 +162,7 @@ public class SettingsScreen extends AbstractScreen implements MouseListener{
         
         g.drawLine(0, 0, 1920, 1080);
         g.drawLine(1800, 0, 1920, 1080);
+        */
 	}
 	
 	@Override
@@ -192,39 +198,38 @@ public class SettingsScreen extends AbstractScreen implements MouseListener{
 				gameSettings.setEndValue((tmp<50)? ++tmp:tmp);
 			}
 			
-			else if (x > width/2-10-100 && x < width/2-10-100+19 && y > 479 && y < 479+19)
-			{
-				this.programSettings.setResolution(-1);
-				this.layer.setSize(programSettings.getCanvasDimension());
-				
-				BloodyPlayground frame = this.layer.getFrame(); 
-				Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-				
-				int frameXpos = (int) screenSize.getWidth()/2-programSettings.getCanvasX()/2;
-				int frameYpos = (int) screenSize.getHeight()/2-programSettings.getCanvasY()/2;
-				
-				frame.setVisible(false);
-				frame.setSize(programSettings.getFrameDimension());
-				frame.setLocation(frameXpos,frameYpos);
-				frame.setVisible(true);
-			}
-			else if (x > width/2-10+100 && x < width/2-10+100+19 && y > 479 && y < 479+19)
-			{
-				this.programSettings.setResolution(1);
-				this.layer.setSize(programSettings.getCanvasDimension());
-				
-				BloodyPlayground frame = this.layer.getFrame(); 
-				Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-				
-				int frameXpos = (int) screenSize.getWidth()/2-programSettings.getCanvasX()/2;
-				int frameYpos = (int) screenSize.getHeight()/2-programSettings.getCanvasY()/2;
-				
-				frame.setVisible(false);
-				frame.setSize(programSettings.getFrameDimension());
-				frame.setLocation(frameXpos,frameYpos);
-				frame.setVisible(true);
-			}
+			if (!this.layer.getFrame().isFullScreenOn())
+	        {
+				if (x > width/2-10-100 && x < width/2-10-100+19 && y > 479 && y < 479+19)
+				{
+					this.changeResolution(-1);
+				}
+				else if (x > width/2-10+100 && x < width/2-10+100+19 && y > 479 && y < 479+19)
+				{
+					this.changeResolution(1);
+				}
+	        }
 		}
+	}
+	
+	/*
+	 * Increments or decrements resolution, according to sign of integer
+	 */
+	private void changeResolution (int i) {
+		this.programSettings.setResolution(i);
+		this.layer.setSize(programSettings.getCanvasDimension());
+		
+		BloodyPlayground frame = this.layer.getFrame(); 
+		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+		
+		int frameXpos = (int) screenSize.getWidth()/2-programSettings.getCanvasX()/2;
+		int frameYpos = (int) screenSize.getHeight()/2-programSettings.getCanvasY()/2;
+		
+		frame.setVisible(false);
+		frame.setSize(programSettings.getFrameDimension());
+		frame.setLocation(frameXpos,frameYpos);
+		frame.setVisible(true);
+		
 	}
 	
 	public void removeListener () {
@@ -235,16 +240,13 @@ public class SettingsScreen extends AbstractScreen implements MouseListener{
 	public void update() {}
 
 	@Override
-	public void mouseClicked(MouseEvent arg0) {		
-	}
+	public void mouseClicked(MouseEvent arg0) {}
 
 	@Override
-	public void mouseEntered(MouseEvent arg0) {
-	}
+	public void mouseEntered(MouseEvent arg0) {}
 
 	@Override
-	public void mouseExited(MouseEvent arg0) {
-	}
+	public void mouseExited(MouseEvent arg0) {}
 
 	@Override
 	public void mouseReleased(MouseEvent arg0) {}

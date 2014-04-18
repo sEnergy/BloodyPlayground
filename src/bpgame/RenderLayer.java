@@ -55,7 +55,9 @@ public class RenderLayer extends Canvas implements Runnable {
 		
 		// setting default resolution of the game and size of frame
 		this.ps = new ProgramSettings(frame);
-		this.ps.setResolution("r1280");
+		
+		if (!frame.isFullScreenOn())
+			this.ps.setResolution("r1280");
 		
 		this.settings = new GameSettings();
 		this.frame = frame;
@@ -95,7 +97,11 @@ public class RenderLayer extends Canvas implements Runnable {
 			}
 		};
 		
-		ps.setResolution("r1280");
+		if (frame.isFullScreenOn())
+			ps.setFullScreenResolution();
+		else
+			ps.setResolution("r1280");
+		
 		this.setSize(ps.getCanvasDimension());
 		this.frame.setSize(ps.getFrameDimension());
 		
@@ -391,5 +397,9 @@ public class RenderLayer extends Canvas implements Runnable {
 	
 	public BloodyPlayground getFrame () {
 		return this.frame;
+	}
+	
+	public void setFrame (BloodyPlayground  bp) {
+		this.frame = bp;
 	}
 }
