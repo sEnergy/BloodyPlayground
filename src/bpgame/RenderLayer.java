@@ -345,7 +345,7 @@ public class RenderLayer extends Canvas implements Runnable {
 		
 		if (buffer == null)
 		{
-			this.createBufferStrategy(3);
+			this.createBufferStrategy(2);
 			return;
 		}
 		else

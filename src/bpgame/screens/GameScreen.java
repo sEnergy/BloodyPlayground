@@ -11,6 +11,9 @@ import bpgame.RenderLayer;
 import bpgame.collectibles.CollectiblesManager;
 import bpgame.events.handling.CollisionHandling;
 import bpgame.gamedata.GameSettings;
+import bpgame.map.GameMap;
+import bpgame.map.objects.Obstacle;
+import bpgame.map.objects.SpecialGround;
 import bpgame.player.Player;
 import bpgame.weapons.projectiles.Projectile;
 import bpgame.weapons.projectiles.ProjectileSeedManager;
@@ -22,11 +25,15 @@ public class GameScreen extends AbstractScreen implements KeyListener {
 	
 	private final int SAFEZONE_BOTTOM = 170;
 
-	CollisionHandling ch = null;
-	CollectiblesManager cm = null;
-	ProjectileSeedManager psm = null;
+	private CollisionHandling ch = null;
+	private CollectiblesManager cm = null;
 	
-	GameSettings gameSettings;
+	@SuppressWarnings("unused")
+	private ProjectileSeedManager psm = null;
+	
+	private GameSettings gameSettings = null;
+	
+	private GameMap map = null;
 	
 	private ArrayList<Player> players = null;
 	private ArrayList<Projectile> projectiles = null;
@@ -49,9 +56,12 @@ public class GameScreen extends AbstractScreen implements KeyListener {
 		
 		this.layer.setSize(layer.getProgramSettings().getCanvasDimension());
 		
+		this.map = new GameMap (layer.getProgramSettings().getCanvasX());
+		
 		ch.setCollectibles(this.cm.getCollectibles());
 		ch.setPlayers(this.players);
 		ch.setProjectiles(this.projectiles);
+		ch.setObstacles(this.map.getObstacles());
 		
 		Player.resetId();
 		
@@ -72,8 +82,7 @@ public class GameScreen extends AbstractScreen implements KeyListener {
 		this.setAntialiasing(g);
 		this.getRenderDimensions();
 		
-		g.setColor(new Color(247,247,247));
-		g.fillRect(0, 0, this.layer.getWidth(), this.layer.getHeight());
+		this.map.renderBackground(g, layer);
 		
 		for (Player pl : players) pl.render(g);
 		for (Projectile projectile : projectiles) projectile.render(g);	
@@ -126,6 +135,24 @@ public class GameScreen extends AbstractScreen implements KeyListener {
 			
 		}
 		
+		this.map.renderForeground(g, layer);
+		
+		// debug of obstacle polygons
+		for (Obstacle o: this.map.getObstacles())
+		{
+			if (o.isBlockingProjectiles())
+				g.setColor(Color.MAGENTA);
+			else
+				g.setColor(Color.RED);
+			
+			g.drawPolygon(o.getArea());
+		}
+		
+		// debug of special grounds polygons
+		g.setColor(Color.CYAN);
+		for (SpecialGround sg: this.map.getSpecialGrounds())
+				g.drawPolygon(sg.getArea());
+		
 	}
 
 	/*
@@ -133,7 +160,7 @@ public class GameScreen extends AbstractScreen implements KeyListener {
 	 */
 	@Override
 	public void update() {
-		for (Player pl : players) pl.update();	
+		for (Player pl : players) pl.update(this.map);	
 		this.cm.update();
 		
 		ProjectileSeedManager.update();

@@ -8,8 +8,6 @@ GENERAL
 GAMEPLAY
 --------
 - suprise powerup
-- players place obstacles
-- different floors, different speed
 - changing weapons + reload reset on change
 - reload
 
@@ -52,5 +50,6 @@ GUI
 SETTINGS
 --------
 - death reset powerups
-- contrls settings
+- controls
 - spawn delay 
+- font antialiasing

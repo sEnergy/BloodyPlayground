@@ -30,15 +30,8 @@ public abstract class AbstractScreen {
 	/*
 	 * Turns on antialiasing for texts and rendered objects
 	 */
-	public void setAntialiasing (Graphics g) {
-		Graphics2D g2 = (Graphics2D)g; 
-		
-		RenderingHints rh = new RenderingHints(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_GASP); 
-		
-		rh.put(RenderingHints.KEY_RENDERING,RenderingHints.VALUE_RENDER_QUALITY);
-		rh.put(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-		
-		g2.setRenderingHints(rh);
+	public void setAntialiasing (Graphics g) {		
+		((Graphics2D)g).setRenderingHints(new RenderingHints(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_GASP));
 	}
 	
 	public void getRenderDimensions () {

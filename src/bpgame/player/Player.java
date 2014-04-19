@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import bpgame.BloodyPlayground;
 import bpgame.RenderLayer;
 import bpgame.events.handling.CollisionHandling;
+import bpgame.map.GameMap;
 import bpgame.weapons.Weapon;
 import bpgame.weapons.Weapon.WEAPON;
 import bpgame.weapons.projectiles.Projectile;
@@ -22,6 +23,8 @@ public class Player extends KeyAdapter implements KeyListener, Comparable<Object
 	
 	// variable used for setting id of player
 	private static int playerNumber = 0;
+	
+	private final int DEFAULT_SIZE = 75;
 	
 	/*
 	 * Enum for player directions
@@ -39,7 +42,7 @@ public class Player extends KeyAdapter implements KeyListener, Comparable<Object
 	// basic player datat
 	private int id;
 	private int x_pos, y_pos;
-	private int size = 50;
+	private int size;
 	private DIRECTION direction;
 	
 	private Color color;
@@ -90,6 +93,7 @@ public class Player extends KeyAdapter implements KeyListener, Comparable<Object
 	public Player (RenderLayer map, ArrayList<Projectile> projectiles, CollisionHandling ch) {
 
 		this.id = ++Player.playerNumber;
+		this.size = (int)(DEFAULT_SIZE*GameMap.getGameScale());
 
 		if (Player.ch == null)
 			Player.ch = ch;
@@ -221,7 +225,7 @@ public class Player extends KeyAdapter implements KeyListener, Comparable<Object
 	/*
 	 * Updates player object (one tick)
 	 */
-	public void update () {
+	public void update (GameMap map) {
 		
 		if (this.alive) // alive player
 		{
@@ -233,20 +237,20 @@ public class Player extends KeyAdapter implements KeyListener, Comparable<Object
 				switch (this.direction)
 				{
 					case DOWN:
-						y += this.current_speed*this.speedMultiplier;
+						y += this.current_speed*this.speedMultiplier*map.getFloorSpeedMultiplier(this.x_pos, this.y_pos);
 						break;
 					case LEFT:
-						x -= this.current_speed*this.speedMultiplier;
+						x -= this.current_speed*this.speedMultiplier*map.getFloorSpeedMultiplier(this.x_pos, this.y_pos);
 						break;
 					case RIGHT:
-						x += this.current_speed*this.speedMultiplier;
+						x += this.current_speed*this.speedMultiplier*map.getFloorSpeedMultiplier(this.x_pos, this.y_pos);
 						break;
 					case UP:
-						y -= this.current_speed*this.speedMultiplier;
+						y -= this.current_speed*this.speedMultiplier*map.getFloorSpeedMultiplier(this.x_pos, this.y_pos);
 						break;
 				}
 				
-				if (ch.isUnblockedPosition(x, y, this.id)) // conflict
+				if (ch.isUnblockedPosition(x, y, this.id)) // no conflict
 				{
 					this.x_pos = x;
 					this.y_pos = y;
@@ -312,6 +316,9 @@ public class Player extends KeyAdapter implements KeyListener, Comparable<Object
 	 * Render player
 	 */
 	public void render (Graphics g) {
+		
+		//Image test = Toolkit.getDefaultToolkit().getImage("src/bpgame/resources/gui/test.png");
+		//g.drawImage(test, 0, 0, this.layer);
 		
 		if (this.puVestOn)
 		{

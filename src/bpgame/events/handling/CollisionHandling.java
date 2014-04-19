@@ -6,6 +6,7 @@ import bpgame.BloodyPlayground;
 import bpgame.collectibles.AbstractCollectible;
 import bpgame.collectibles.BonusWeapon;
 import bpgame.collectibles.PowerUp;
+import bpgame.map.objects.Obstacle;
 import bpgame.player.Player;
 import bpgame.weapons.Weapon;
 import bpgame.weapons.projectiles.Projectile;
@@ -28,6 +29,7 @@ public class CollisionHandling {
 	private ArrayList<Player> players = null;
 	private ArrayList<Projectile> projectiles = null;
 	private ArrayList<AbstractCollectible> collectibles = null;
+	private ArrayList<Obstacle> obstacles = null;
 	
 	public CollisionHandling (int w, int h, int safeZoneBottom) {
 		
@@ -42,7 +44,7 @@ public class CollisionHandling {
 	}
 	
 	/*
-	 * Method that determines whether is position blocked by another player or not.
+	 * Method that determines whether is position blocked by another something or not.
 	 * 
 	 * For check of blocking of any plyers, call with playerId == 0.
 	 */
@@ -68,6 +70,12 @@ public class CollisionHandling {
 			}
 		}
 		
+		// check for blocking by map obstacle
+		if (playerId != 0)
+			for (Obstacle o : this.obstacles)
+				if (o.getArea().contains(x, y))
+					return false;
+		
 		return true;
 	}
 	
@@ -89,7 +97,7 @@ public class CollisionHandling {
 			return false;
 		
 		// check of physical proximity and shooting range of other players
-		for (Player pl : players)
+		for (Player pl : this.players)
 		{
 			if (id != pl.getId()) 
 			{			
@@ -103,6 +111,11 @@ public class CollisionHandling {
 					return false; // small vertical distance
 			}
 		}
+		
+		// check for blocking by map obstacle
+		for (Obstacle o : this.obstacles)
+			if (o.getArea().contains(x, y))
+				return false;
 		
 		return true;
 	}
@@ -285,6 +298,14 @@ public class CollisionHandling {
 
 	public void setCollectibles(ArrayList<AbstractCollectible> collectibles) {
 		this.collectibles = collectibles;
+	}
+	
+	public void setObstacles(ArrayList<Obstacle> obstacles) {
+		this.obstacles = obstacles;
+	}
+	
+	public ArrayList<Obstacle> getObstacles () {
+		return this.obstacles;
 	}
 
 	public int getWidth() {

@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics;
 
 import bpgame.events.handling.CollisionHandling;
+import bpgame.map.objects.Obstacle;
 import bpgame.player.Player;
 
 /*
@@ -73,6 +74,8 @@ public class Projectile {
 		
 		if (this.y <= 0 || this.x <= 0 || this.y >= ch.getHeight() || this.x >= ch.getWidth())
 			return false;
+		else if (this.hitObstacle())
+			return false;
 		else
 			return true;
 	}
@@ -80,6 +83,18 @@ public class Projectile {
 	public void render (Graphics g) {
 		g.setColor(Color.BLACK);
 		g.fillOval(this.x-this.SIZE/2, this.y-this.SIZE/2, this.SIZE, this.SIZE);
+	}
+	
+	/*
+	 * Return boolean value, whether projectile hit an obstacle
+	 */
+	private boolean hitObstacle () {
+		
+		for (Obstacle o : Projectile.ch.getObstacles())
+			if (o.getArea().contains(this.x, this.y) && o.isBlockingProjectiles())
+				return true;
+		
+		return false;
 	}
 
 	public int getX_pos() {
